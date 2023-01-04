@@ -9,6 +9,7 @@ import numpy as np
 from scipy.special import comb
 import time
 from collections import deque
+import copy
 
 # Works for both V2 and V3
 # Easy = 1, Normal = 3, Hard = 5, Expert = 7, Expert+ = 9
@@ -19,6 +20,8 @@ left_handed_angle_strain_forehand = 315       # 270 + 45
 # 
 # 
 # 
+def average(lst):
+    return sum(lst) / len(lst)
 def bernstein_poly(i, n, t):
     """
      The Bernstein polynomial of n, i as a function of t
@@ -249,34 +252,67 @@ def swingStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 
             else:
                 strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Left Handed Forehand
     return strainAmount
-def mostLikelyParityChecker(swingData: list, bombData: list, leftOrRight):      # Default 5
-    forehand = NULL
-    lookBackNum = len(swingData)
-    testData = deque()  # queue
-    for i in range(0, lookBackNum):
-        if i >= 5:       # Starts removing old entries to keep the list at n entries, 5 = 5 entries, 
-            testData.popleft()
-        testData.append(swingData[i])
-        testData[-1]['forehand'] = True     # Test data
-        forehandTest = swingStrainCalc(list(testData), leftOrRight)
-        testData[-1]['forehand'] = False
-        backhandTest = swingStrainCalc(list(testData), leftOrRight)
-        if forehandTest < backhandTest:
-            swingData[i]['forehand'] = True      # Forhand gave a lower stress value, therefore is the best option in terms of hand placement
-        elif forehandTest < backhandTest:
-            swingData[i]['forehand'] = False
+def patternSplitter(swingData: list):    # Does swing speed analysis to split the long list of dictionaries into smaller lists of patterns containing lists of dictionaries
+    for i in range(0, len(swingData)):   # Swing Frequency Analyzer
+        if i > 0 and i+1 < len(swingData):    # Checks done so we don't try to access data that doesn't exist
+            SF = 2/(swingData[i+1]['time'] - swingData[i-1]['time'])    # Swing Frequency
         else:
-            swingData[i]['forehand'] = not swingData[i-1]['forehand']   # If both options are equally bad, just flip
-        testData[-1]['forehand'] = swingData[i]['forehand'] 
-        swingData[i]['strain'] = swingStrainCalc(list(testData)[-1:], leftOrRight)  # Done like this because the function expects a list
-    return swingData
+            SF = 0
+        swingData[i]['frequency'] = SF
+    patternFound = False
+    patternList = []            # Pattern List
+    tempPlist = []              # Temp Pattern List
+    for i in range(0, len(swingData)):
+        if i > 0:
+            if 1 / (swingData[i]['time'] - swingData[i-1]['time']) == swingData[i]['frequency']:    # Tries to find Patterns
+                if not patternFound:
+                    patternFound = True
+                    del tempPlist[-1]
+                    if len(tempPlist) > 0:
+                        patternList.append(tempPlist)
+                    tempPlist = [swingData[i-1]]
+                tempPlist.append(swingData[i])
+            else:
+                if len(tempPlist) > 0 and patternFound:
+                    tempPlist.append(swingData[i])
+                    patternList.append(tempPlist)
+                    tempPlist = []
+                else:
+                    patternFound = False
+                    tempPlist.append(swingData[i])
+        else:
+            tempPlist.append(swingData[0])
+    return patternList
+def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses through a List of Lists of Dictionaries to calculate the most likely parity for each pattern
+    newPatternData = []
+    for p in range(0, len(patternData)):
+        testData1 = copy.deepcopy(patternData[p])
+        testData2 = copy.deepcopy(patternData[p])
+        for i in range(0, len(testData1)):  # Build Forehand TestData Build
+            if i > 0:
+                testData1[i]['forehand'] = not testData1[i-1]['forehand']     
+            else:
+                testData1[0]['forehand'] = True
+        forehandTest = swingStrainCalc(testData1, leftOrRight)    # Test data
+        for i in range(0, len(testData2)):  # Build Banckhand Test Data
+            if i > 0:
+                testData2[i]['forehand'] = not testData2[i-1]['forehand']     
+            else:
+                testData2[0]['forehand'] = False
+        backhandTest = swingStrainCalc(testData2, leftOrRight)    # Test data
+        if forehandTest <= backhandTest:    #Prefer forehand starts over backhand if equal
+            newPatternData += testData1      # Forehand gave a lower stress value, therefore is the best option in terms of hand placement for the pattern
+        elif forehandTest > backhandTest:
+            newPatternData += testData2
+        for i in range(0, len(newPatternData)):
+            newPatternData[i]['strain'] = swingStrainCalc([newPatternData[i]], leftOrRight)  # Assigns individual strain values to each swing. Done like this in square brackets because the function expects a list.
+    return newPatternData
 def staminaCalc(swingData: list):
     staminaList: list = []
     #TODO calculate strain from stamina drain
 
+
     return staminaList
-
-
 def swingCurveCalc(swingData: list):
     curveList: list = []
     # TODO calculate swing curve between blocks based on their angels and positions (alwayd forwards looking at last block)
@@ -298,6 +334,10 @@ def swingCurveCalc(swingData: list):
         else:
             curveList[i] = 0
     return curveList
+def combineAndSortList(array1, array2, key):
+    combinedArray = array1 + array2
+    combinedArray = sorted(combinedArray, key=lambda x: x[f'{key}'])  # once combined, sort by time
+    return combinedArray
 def loadInfoData(mapID: str):
     songPath = findSongPath(mapID)
     infoPath = findInfoFile(songPath)
@@ -321,23 +361,33 @@ def calculateTech(mapData):
     bombData = splitMapData(mapData, 2)
     LeftSwingData = swingProcesser(LeftMapData)
     RightSwingData = swingProcesser(RightMapData)
-    LeftSwingData = mostLikelyParityChecker(LeftSwingData, bombData, False)
-    RightSwingData = mostLikelyParityChecker(RightSwingData, bombData, True)
+    LeftPatternData = patternSplitter(LeftSwingData)
+    RightPatternData = patternSplitter(RightSwingData)
+    LeftSwingData = parityPredictor(LeftPatternData, bombData, False)
+    RightSwingData = parityPredictor(RightPatternData, bombData, True)
 
+    SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
+    StrainList = [strain['strain'] for strain in SwingData]
+    tech = average(StrainList)
     
-    print("placeholder")        # Put Breakpoint here if you want to see
+    
+    print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
+    return tech
 
 #'forehand': mostLikelyParityChecker(swingData, max(5, len(swingData)))
-
-infoData = loadInfoData('1e7c0')
-mapData = loadMapData('1e7c0', 9)
+print("input map key")
+mapKey = input()
+mapKey = mapKey.replace("!bsr ", "")
+infoData = loadInfoData(mapKey)
+print(f'Choose Diff num: {findStandardDiffs(findSongPath(mapKey))}')
+diffNum = int(input())
+mapData = loadMapData(mapKey, diffNum)
 t0 = time.time()
 try:
     mapVersion = parse(mapData['version'])
 except KeyError:
     mapVersion = parse(mapData['_version'])
-
-if mapVersion < parse('3.0.0'):
+if mapVersion < parse('3.0.0'):     # Try to figure out if the map is the V2 or V3 format
     maptype = 2
     mapData = V2_to_V3(mapData)
 else:

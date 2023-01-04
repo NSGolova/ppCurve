@@ -6,14 +6,18 @@ def load_BSPath():
         f = open('Tech Calculator/_BackendFiles/bs_path.txt', 'r')
         bsPath = f.read()
     except FileNotFoundError:
-        print('Enter Beat Saber Install Folder:')
-        # TODO: validate path
-        #bsPath = askdirectory()
-        bsPath = input()
-        if bsPath[-1] not in ['\\', '/']:  # Checks if song path is empty
-            bsPath += '\\'
-        f = open('Tech Calculator/_BackendFiles/bs_path.txt', 'w')
-        f.write(bsPath)
+        try:
+            f = open('_BackendFiles/bs_path.txt', 'r')
+            bsPath = f.read()
+        except:
+            print('Enter Beat Saber Install Folder:')
+            # TODO: validate path
+            #bsPath = askdirectory()
+            bsPath = input()
+            if bsPath[-1] not in ['\\', '/']:  # Checks if song path is empty
+                bsPath += '\\'
+            f = open('Tech Calculator/_BackendFiles/bs_path.txt', 'w')
+            f.write(bsPath)
     finally:
         f.close()
     return bsPath
