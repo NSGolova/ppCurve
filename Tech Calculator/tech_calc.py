@@ -20,15 +20,15 @@ left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 # 
 # 
-def average(lst):
+def average(lst):   # Returns the averate of a list of integers
     return sum(lst) / len(lst)
-def bernstein_poly(i, n, t):
+def bernstein_poly(i, n, t):    # For later
     """
      The Bernstein polynomial of n, i as a function of t
     """
 
     return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
-def bezier_curve(points, nTimes=100):
+def bezier_curve(points, nTimes=100):   # For later
     """
        Given a set of control points, return the
        bezier curve defined by the control points.
@@ -248,9 +248,9 @@ def swingStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 
                 strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - swingData[i]['angle']) - 180)) / 180)**2)           # Left Handed Forehand
         else:
             if leftOrRight:
-                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Right Handed Forehand
+                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Right Handed Backhand
             else:
-                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Left Handed Forehand
+                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Left Handed Backhand
     return strainAmount
 def patternSplitter(swingData: list):    # Does swing speed analysis to split the long list of dictionaries into smaller lists of patterns containing lists of dictionaries
     for i in range(0, len(swingData)):   # Swing Frequency Analyzer
@@ -265,13 +265,13 @@ def patternSplitter(swingData: list):    # Does swing speed analysis to split th
     for i in range(0, len(swingData)):
         if i > 0:
             if 1 / (swingData[i]['time'] - swingData[i-1]['time']) == swingData[i]['frequency']:    # Tries to find Patterns
-                if not patternFound:
+                if not patternFound:    # Found a pattern and it's the first one?
                     patternFound = True
                     del tempPlist[-1]
-                    if len(tempPlist) > 0:
+                    if len(tempPlist) > 0:  # We only want to store lists with stuff
                         patternList.append(tempPlist)
-                    tempPlist = [swingData[i-1]]
-                tempPlist.append(swingData[i])
+                    tempPlist = [swingData[i-1]]    #Store the 1st block of the pattern
+                tempPlist.append(swingData[i])  # Store the block we're working on
             else:
                 if len(tempPlist) > 0 and patternFound:
                     tempPlist.append(swingData[i])
