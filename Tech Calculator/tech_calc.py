@@ -286,7 +286,7 @@ def patternSplitter(swingData: list):    # Does swing speed analysis to split th
 def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses through a List of Lists of Dictionaries to calculate the most likely parity for each pattern
     newPatternData = []
     for p in range(0, len(patternData)):
-        testData1 = copy.deepcopy(patternData[p])
+        testData1 = patternData[p]
         testData2 = copy.deepcopy(patternData[p])
         for i in range(0, len(testData1)):  # Build Forehand TestData Build
             if i > 0:
@@ -363,9 +363,10 @@ def calculateTech(mapData):
     RightSwingData = swingProcesser(RightMapData)
     LeftPatternData = patternSplitter(LeftSwingData)
     RightPatternData = patternSplitter(RightSwingData)
+    
     LeftSwingData = parityPredictor(LeftPatternData, bombData, False)
     RightSwingData = parityPredictor(RightPatternData, bombData, True)
-
+    
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['strain'] for strain in SwingData]
     tech = average(StrainList)
@@ -394,9 +395,9 @@ else:
     maptype = 3
 
 calculateTech(mapData)
-
 t1 = time.time()
 print(f'Execution Time = {t1-t0}')
+
 
 
 
