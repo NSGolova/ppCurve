@@ -2,5 +2,5 @@ _AIcache/
 _playerStats/
 bs_path.txt
 __pycache__/
-_BackendFiles/__pycache__
+_BackendFiles/__pycache__/
 *.pyc
