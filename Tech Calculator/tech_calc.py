@@ -22,6 +22,8 @@ left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 def average(lst):   # Returns the averate of a list of integers
     return sum(lst) / len(lst)
+def margin(num, margin):
+    return
 def bernstein_poly(i, n, t):    # For later
     """
      The Bernstein polynomial of n, i as a function of t
@@ -192,8 +194,19 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
                     else: # 1/2 Check (just to weed out obvious non-sliders) More complicated methods need to be used
                         if abs(cBlockA - pBlockA) < 112.5:  # 90 + 22.5 JUST IN CASE. not the full 90 + 45 since that would be one hell of a slider or dot note
-                            sliderTime = cBlockB - pBlockB
-                            isSlider = True
+                            try:
+                                testAnglefromPosition = math.degrees(math.atan((pBlockP[1]-cBlockP[1])/(pBlockP[0]-cBlockP[0]))) % 360 # Replaces angle swing from block angle to slider angle
+                            except ZeroDivisionError:       # Often we get a divide by zero error which is actually 90 or 270 degrees. Try putting a super large number into atan in your calculator ;)
+                                if cBlockP[1] > pBlockP[1]:
+                                    testAnglefromPosition = 90
+                                else:
+                                    testAnglefromPosition = 270
+                            averageAngleOfBlocks = (cBlockA + pBlockA) / 2
+                            if abs(testAnglefromPosition - averageAngleOfBlocks) <= 56.25:  # = 112.5 / 2 = 56.25
+                                sliderTime = cBlockB - pBlockB
+                                isSlider = True
+                            else:
+                                swingData.append({'time': cBlockB, 'angle': cBlockA})
                         else:
                             swingData.append({'time': cBlockB, 'angle': cBlockA})
                 else: # 1/8 Check
@@ -260,11 +273,13 @@ def patternSplitter(swingData: list):    # Does swing speed analysis to split th
             SF = 0
         swingData[i]['frequency'] = SF
     patternFound = False
+    SFList = [freq['frequency'] for freq in swingData]
+    SFmargin = average(SFList) / 32
     patternList = []            # Pattern List
     tempPlist = []              # Temp Pattern List
     for i in range(0, len(swingData)):
         if i > 0:
-            if 1 / (swingData[i]['time'] - swingData[i-1]['time']) == swingData[i]['frequency']:    # Tries to find Patterns
+            if (1 / (swingData[i]['time'] - swingData[i-1]['time'])) - swingData[i]['frequency'] <= SFmargin:    # Tries to find Patterns within margin
                 if not patternFound:    # Found a pattern and it's the first one?
                     patternFound = True
                     del tempPlist[-1]
@@ -304,8 +319,13 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
             newPatternData += testData1      # Forehand gave a lower stress value, therefore is the best option in terms of hand placement for the pattern
         elif forehandTest > backhandTest:
             newPatternData += testData2
-        for i in range(0, len(newPatternData)):
-            newPatternData[i]['strain'] = swingStrainCalc([newPatternData[i]], leftOrRight)  # Assigns individual strain values to each swing. Done like this in square brackets because the function expects a list.
+    for i in range(0, len(newPatternData)):
+        newPatternData[i]['strain'] = swingStrainCalc([newPatternData[i]], leftOrRight)  # Assigns individual strain values to each swing. Done like this in square brackets because the function expects a list.
+        if i > 0:
+            if newPatternData[i]['forehand'] == newPatternData[i-1]['forehand']:
+                newPatternData[i]['reset'] = True
+            else:
+                newPatternData[i]['reset'] = False
     return newPatternData
 def staminaCalc(swingData: list):
     staminaList: list = []
