@@ -15,8 +15,8 @@ import copy
 # Easy = 1, Normal = 3, Hard = 5, Expert = 7, Expert+ = 9
 # b = time, x and y = grid location from bottom left, a = angle offset, c = left or right respectively, d = cur direction
 cut_direction_index = [90, 270, 180, 0, 135, 45, 225, 315, 270] #UP, DOWN, LEFT, RIGHT, TOPLEFT, TOPRIGHT, BOTTOMLEFT, BOTTOMRIGHT, DOT
-right_handed_angle_strain_forehand = 225      # Most comfortable angle to aim for right hand (BOTTOM LEFT) 270 - 45
-left_handed_angle_strain_forehand = 315       # 270 + 45
+right_handed_angle_strain_forehand = 247.5      # Most comfortable angle to aim for right hand (BOTTOM LEFT) 270 - 45 or 247.5
+left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 # 
 # 
