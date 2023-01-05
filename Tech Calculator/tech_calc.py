@@ -262,19 +262,16 @@ def swingStrainCalc(swingData: list[swing], leftOrRight): # False or 0 = Left, T
     strainAmount = 0
     #TODO calculate strain from angle based on left or right hand
     for i in range(0, len(swingData)):
-        try:
-            if swingData[i].forehand:     #The Formula firse calculates by first normalizing the angle difference (/180) then using
-                if leftOrRight:
-                    strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - swingData[i].angle) - 180)) / 180)**2)          # Right Handed Forehand
-                else:
-                    strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - swingData[i].angle) - 180)) / 180)**2)           # Left Handed Forehand
+        if swingData[i].forehand:     #The Formula firse calculates by first normalizing the angle difference (/180) then using
+            if leftOrRight:
+                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - swingData[i].angle) - 180)) / 180)**2)          # Right Handed Forehand
             else:
-                if leftOrRight:
-                    strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - swingData[i].angle) - 180))/180)**2)           # Right Handed Backhand
-                else:
-                    strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i].angle) - 180))/180)**2)           # Left Handed Backhand
-        except:
-            print("found error")
+                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - swingData[i].angle) - 180)) / 180)**2)           # Left Handed Forehand
+        else:
+            if leftOrRight:
+                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - swingData[i].angle) - 180))/180)**2)           # Right Handed Backhand
+            else:
+                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i].angle) - 180))/180)**2)           # Left Handed Backhand
     return strainAmount
 def patternSplitter(swingData: list[swing]):    # Does swing speed analysis to split the long list of dictionaries into smaller lists of patterns containing lists of dictionaries
     for i in range(0, len(swingData)):   # Swing Frequency Analyzer
