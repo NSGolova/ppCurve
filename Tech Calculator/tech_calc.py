@@ -269,7 +269,7 @@ def swingAngleStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, Tru
                 strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Right Handed Backhand
             else:
                 strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Left Handed Backhand
-    return strainAmount
+    return strainAmount * 2
 def bezierAngleStrainCalc(angleData: list, forehand, leftOrRight):
     strainAmount = 0
     for i in range(0, len(angleData)):
@@ -354,14 +354,15 @@ def staminaCalc(swingData: list):
     return staminaList
 def swingCurveCalc(swingData: list, leftOrRight):
     swingData[0]['pathStrain'] = 0  # First Note cannot really have any path strain
+    testData = []
     for i in range(1, len(swingData)):
         point0 = swingData[i-1]['exitPos']      # Curve Beginning
-        point1x = point0[0] + 0.25 * math.cos(math.radians(swingData[i-1]['angle']))
-        point1y = point0[1] + 0.25 * math.sin(math.radians(swingData[i-1]['angle']))
+        point1x = point0[0] + 0.5 * math.cos(math.radians(swingData[i-1]['angle']))
+        point1y = point0[1] + 0.5 * math.sin(math.radians(swingData[i-1]['angle']))
         point1 = [point1x, point1y] #Curve Control Point
         point3 = swingData[i]['entryPos']       # Curve Ending
-        point2x = point3[0] - 0.25 * math.cos(math.radians(swingData[i]['angle']))
-        point2y = point3[1] - 0.25 * math.sin(math.radians(swingData[i]['angle']))
+        point2x = point3[0] - 0.5 * math.cos(math.radians(swingData[i]['angle']))
+        point2y = point3[1] - 0.5 * math.sin(math.radians(swingData[i]['angle']))
         point2 = [point2x, point2y]     #Curve Control Point
         points = [point0, point1, point2, point3]
         xvals, yvals = bezier_curve(points, nTimes=25)
@@ -388,10 +389,20 @@ def swingCurveCalc(swingData: list, leftOrRight):
         # plt.show()
 
         # speedList.sort()        # Sort List from Lowest speed to highest
-        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * 0.25):])
-        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * 0.25):], swingData[i]['forehand'], leftOrRight) / len(angleList)
+        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * 0.25):]) / 20
+        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * 0.25):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
         # curveComplexity = min(speedList)
+        testData.append({'curveComplexityStrain': curveComplexity, 'pathAngleStrain': pathAngleStrain})
         swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain
+    if leftOrRight:
+        hand = 'Right Handed'
+    else:
+        hand = 'Left Handed'
+    print(f"Average {hand} hitAngelStrain {average([Stra['angleStrain'] for Stra in swingData])}")
+    print(f"Average {hand} curveComplexityStrain {average([Stra['curveComplexityStrain'] for Stra in testData])}")
+    print(f"Average {hand} pathAngleStrain {average([Stra['pathAngleStrain'] for Stra in testData])}")
+
+
     return swingData
 def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
