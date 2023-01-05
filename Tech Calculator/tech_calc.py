@@ -22,6 +22,7 @@ left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 
 class swing:
+    __slots__ = 'time', 'angle', 'frequency', 'forehand', 'strain', 'reset'
     def __init__(self, iTime, iAngle):
         self.time = iTime
         self.angle = iAngle
@@ -36,7 +37,6 @@ def bernstein_poly(i, n, t):    # For later
     """
      The Bernstein polynomial of n, i as a function of t
     """
-
     return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
 def bezier_curve(points, nTimes=100):   # For later
     """
