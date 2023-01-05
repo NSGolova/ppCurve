@@ -22,15 +22,12 @@ left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 def average(lst):   # Returns the averate of a list of integers
     return sum(lst) / len(lst)
-def margin(num, margin):
-    return
 def bernstein_poly(i, n, t):    # For later
     """
      The Bernstein polynomial of n, i as a function of t
     """
-
     return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
-def bezier_curve(points, nTimes=100):   # For later
+def bezier_curve(points, nTimes=10):   # For later
     """
        Given a set of control points, return the
        bezier curve defined by the control points.
@@ -39,7 +36,7 @@ def bezier_curve(points, nTimes=100):   # For later
        such as [ [1,1], 
                  [2,3], 
                  [4,5], ..[Xn, Yn] ]
-        nTimes is the number of time steps, defaults to 1000
+        nTimes is the number of time steps, defaults to 10
 
         See http://processingjs.nihongoresources.com/bezierinfo/
     """
@@ -167,6 +164,10 @@ def splitMapData(mapData: dict, leftOrRight: int):    # False or 0 = Left, True 
     else:
         bloqList = [bomb for bomb in mapData['bombNotes']]
     return bloqList
+def calculateBaseEntryExit(cBlockP, cBlockA):
+    entry = [cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
+    exit = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
+    return entry, exit
 def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for all swings returning swing angles and timestamps
     swingData = []
     for i in range(0, len(mapSplitData)):
@@ -192,47 +193,42 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                 if cBlockB - pBlockB > 0.125: # = 1/8 The upper bound of normal slider precision commonly used
                     if cBlockB - pBlockB > 0.5:    # = 1/2 About the limit of whats reasonable to expect from a slider
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
+                        swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                     else: # 1/2 Check (just to weed out obvious non-sliders) More complicated methods need to be used
                         if abs(cBlockA - pBlockA) < 112.5:  # 90 + 22.5 JUST IN CASE. not the full 90 + 45 since that would be one hell of a slider or dot note
-                            try:
-                                testAnglefromPosition = math.degrees(math.atan((pBlockP[1]-cBlockP[1])/(pBlockP[0]-cBlockP[0]))) % 360 # Replaces angle swing from block angle to slider angle
-                            except ZeroDivisionError:       # Often we get a divide by zero error which is actually 90 or 270 degrees. Try putting a super large number into atan in your calculator ;)
-                                if cBlockP[1] > pBlockP[1]:
-                                    testAnglefromPosition = 90
-                                else:
-                                    testAnglefromPosition = 270
+                            testAnglefromPosition = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
                             averageAngleOfBlocks = (cBlockA + pBlockA) / 2
                             if abs(testAnglefromPosition - averageAngleOfBlocks) <= 56.25:  # = 112.5 / 2 = 56.25
                                 sliderTime = cBlockB - pBlockB
                                 isSlider = True
                             else:
-                                swingData.append({'time': cBlockB, 'angle': cBlockA})
+                                swingData.append({'time': cBlockB, 'angle': cBlockA})       # Below calculates the entry and exit positions for each swing
+                                swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                         else:
                             swingData.append({'time': cBlockB, 'angle': cBlockA})
+                            swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                 else: # 1/8 Check
                     if mapSplitData[i]['d'] == 8 or abs(cBlockA - pBlockA) < 90: # 90 degree check since 90 degrees is what most would consider the maximum angle for a slider or dot note
                         sliderTime = 0.125
                         isSlider = True
                     else:
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
+                        swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
             else:   # 1/32 Check
                 sliderTime = 0.03125
                 isSlider = True
             if isSlider:
                 for f in range(1, len(mapSplitData)):   # We clearly know the last block is a slider with the current block under test. Skip to the one before the last block. Should realistically never search more than 5 blocks deep
                     blockIndex = i - f              # Index of the previous block to start comparisons with
+                    if blockIndex < 0:
+                        break      # We Reached the beginning of the map
                     if (mapSplitData[blockIndex]['b'] - mapSplitData[blockIndex - 1]['b'] > 2 * sliderTime):       # use 2x slider time to account for any "irregularities" / margin of error. We are only comparing pairs of blocks
                         pBlockB = mapSplitData[blockIndex]['b']                                             # Essentially finds then caches first block in the slider group
                         pBlockA = mapSplitData[blockIndex]['a']
                         pBlockP = [mapSplitData[blockIndex]['x'], mapSplitData[blockIndex]['y']]
                         break
-                try:
-                    swingData[-1]['angle'] = math.degrees(math.atan((pBlockP[1]-cBlockP[1])/(pBlockP[0]-cBlockP[0]))) % 360 # Replaces angle swing from block angle to slider angle
-                except ZeroDivisionError:       # Often we get a divide by zero error which is actually 90 or 270 degrees. Try putting a super large number into atan in your calculator ;)
-                    if cBlockP[1] > pBlockP[1]:
-                        swingData[-1]['angle'] = 90
-                    else:
-                        swingData[-1]['angle'] = 270
+                
+                cBlockA = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
                 guideAngle = 1150           # A random test value to check later
                 for f in range(1, len(mapSplitData)):       # Checker that will try to find a guiding block (arrow block) for the slider angle prediction.
                     blockIndex = i - f
@@ -242,13 +238,22 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                         guideAngle = cut_direction_index[mapSplitData[blockIndex]['d']]
                         break
                 if guideAngle != 1150:      # A test to see if guideAngle was actually changed
-                    if abs(swingData[-1]['angle'] - guideAngle) > 90:       # If this is true, the predicted angle is wrong, likely by 180 degrees wrong
-                        if swingData[-1]['angle'] >= 180:
-                            swingData[-1]['angle'] -= 180               # Apply Fix
+                    if abs(cBlockA - guideAngle) > 90:       # If this is true, the predicted angle is wrong, likely by 180 degrees wrong
+                        if cBlockA >= 180:
+                            cBlockA -= 180               # Apply Fix
                         else:
-                            swingData[-1]['angle'] += 180             
+                            cBlockA += 180
+                swingData[-1]['angle'] = cBlockA
+                
+                xtest = (swingData[-1]['entryPos'][0] - (cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(math.radians(cBlockA))
+                ytest = (swingData[-1]['entryPos'][1] - (cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.sin(math.radians(cBlockA))
+                if xtest <= 0.001 and ytest >= 0.001:
+                    swingData[-1]['entryPos'] = [cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
+                else:
+                    swingData[-1]['exitPos'] = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]   # We only need to re-calculate the exit position
         else:
             swingData.append({'time': cBlockB, 'angle': cBlockA})    # First Note Exception. will never be a slider or need to undergo any test
+            swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
     return swingData
 def swingStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 1 = Right
     strainAmount = 0
