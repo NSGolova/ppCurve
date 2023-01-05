@@ -353,11 +353,6 @@ def staminaCalc(swingData: list):
 
     return staminaList
 def swingCurveCalc(swingData: list, leftOrRight):
-    # TODO build list of list of list of points
-    # TODO calculate angle from position
-    # calculate bezier points using bezier curve function
-    # calculate bezier speed from points
-    # get the minimum speed of curve
     swingData[0]['pathStrain'] = 0  # First Note cannot really have any path strain
     for i in range(1, len(swingData)):
         point0 = swingData[i-1]['exitPos']      # Curve Beginning
@@ -369,7 +364,7 @@ def swingCurveCalc(swingData: list, leftOrRight):
         point2y = point3[1] - 0.25 * math.sin(math.radians(swingData[i]['angle']))
         point2 = [point2x, point2y]     #Curve Control Point
         points = [point0, point1, point2, point3]
-        xvals, yvals = bezier_curve(points, nTimes=10)
+        xvals, yvals = bezier_curve(points, nTimes=25)
         xvals.reverse()
         yvals.reverse()
         speedList = []
@@ -393,7 +388,7 @@ def swingCurveCalc(swingData: list, leftOrRight):
         # plt.show()
 
         # speedList.sort()        # Sort List from Lowest speed to highest
-        curveComplexity = 0.004 / average(speedList)
+        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * 0.25):])
         pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * 0.25):], swingData[i]['forehand'], leftOrRight) / len(angleList)
         # curveComplexity = min(speedList)
         swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain
@@ -440,7 +435,8 @@ def calculateTech(mapData):
     
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
-    tech = average(StrainList)
+    StrainList.sort()
+    tech = average(StrainList[int(len(StrainList) * 0.25):])
     
     
     print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
