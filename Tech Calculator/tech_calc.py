@@ -27,7 +27,7 @@ def bernstein_poly(i, n, t):    # For later
      The Bernstein polynomial of n, i as a function of t
     """
     return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
-def bezier_curve(points, nTimes=10):   # For later
+def bezier_curve(points, nTimes=1000):   # For later
     """
        Given a set of control points, return the
        bezier curve defined by the control points.
@@ -36,7 +36,7 @@ def bezier_curve(points, nTimes=10):   # For later
        such as [ [1,1], 
                  [2,3], 
                  [4,5], ..[Xn, Yn] ]
-        nTimes is the number of time steps, defaults to 10
+        nTimes is the number of time steps, defaults to 1000
 
         See http://processingjs.nihongoresources.com/bezierinfo/
     """
@@ -52,7 +52,7 @@ def bezier_curve(points, nTimes=10):   # For later
     xvals = np.dot(xPoints, polynomial_array)
     yvals = np.dot(yPoints, polynomial_array)
 
-    return xvals, yvals
+    return list(xvals), list(yvals)
 def load_json_as_dict(path: str):    # Reads, then loads and returns JSON as a dictionary
     with open(path, 'rb') as json_dat:
         dat = json.loads(json_dat.read())   
@@ -247,15 +247,15 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                 
                 xtest = (swingData[-1]['entryPos'][0] - (cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(math.radians(cBlockA))
                 ytest = (swingData[-1]['entryPos'][1] - (cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.sin(math.radians(cBlockA))
-                if xtest <= 0.001 and ytest >= 0.001:
+                if xtest <= 0.001 and ytest >= 0.001:       # For sliders, one of the entry/exit positions is still correct, this figures out which one then replaces the other
                     swingData[-1]['entryPos'] = [cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
                 else:
-                    swingData[-1]['exitPos'] = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]   # We only need to re-calculate the exit position
+                    swingData[-1]['exitPos'] = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]   
         else:
             swingData.append({'time': cBlockB, 'angle': cBlockA})    # First Note Exception. will never be a slider or need to undergo any test
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
     return swingData
-def swingStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 1 = Right
+def swingAngleStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 1 = Right
     strainAmount = 0
     #TODO calculate strain from angle based on left or right hand
     for i in range(0, len(swingData)):
@@ -269,6 +269,20 @@ def swingStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 
                 strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Right Handed Backhand
             else:
                 strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180))/180)**2)           # Left Handed Backhand
+    return strainAmount
+def bezierAngleStrainCalc(angleData: list, forehand, leftOrRight):
+    strainAmount = 0
+    for i in range(0, len(angleData)):
+        if forehand:
+            if leftOrRight:
+                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - angleData[i]) - 180)) / 180)**2)          # Right Handed Forehand
+            else:
+                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - angleData[i]) - 180)) / 180)**2)           # Left Handed Forehand
+        else:
+            if leftOrRight:
+                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - angleData[i]) - 180))/180)**2)           # Right Handed Backhand
+            else:
+                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - angleData[i]) - 180))/180)**2)           # Left Handed Backhand
     return strainAmount
 def patternSplitter(swingData: list):    # Does swing speed analysis to split the long list of dictionaries into smaller lists of patterns containing lists of dictionaries
     for i in range(0, len(swingData)):   # Swing Frequency Analyzer
@@ -313,19 +327,19 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
                 testData1[i]['forehand'] = not testData1[i-1]['forehand']     
             else:
                 testData1[0]['forehand'] = True
-        forehandTest = swingStrainCalc(testData1, leftOrRight)    # Test data
+        forehandTest = swingAngleStrainCalc(testData1, leftOrRight)    # Test data
         for i in range(0, len(testData2)):  # Build Banckhand Test Data
             if i > 0:
                 testData2[i]['forehand'] = not testData2[i-1]['forehand']     
             else:
                 testData2[0]['forehand'] = False
-        backhandTest = swingStrainCalc(testData2, leftOrRight)    # Test data
+        backhandTest = swingAngleStrainCalc(testData2, leftOrRight)    # Test data
         if forehandTest <= backhandTest:    #Prefer forehand starts over backhand if equal
             newPatternData += testData1      # Forehand gave a lower stress value, therefore is the best option in terms of hand placement for the pattern
         elif forehandTest > backhandTest:
             newPatternData += testData2
     for i in range(0, len(newPatternData)):
-        newPatternData[i]['strain'] = swingStrainCalc([newPatternData[i]], leftOrRight)  # Assigns individual strain values to each swing. Done like this in square brackets because the function expects a list.
+        newPatternData[i]['angleStrain'] = swingAngleStrainCalc([newPatternData[i]], leftOrRight)  # Assigns individual strain values to each swing. Done like this in square brackets because the function expects a list.
         if i > 0:
             if newPatternData[i]['forehand'] == newPatternData[i-1]['forehand']:
                 newPatternData[i]['reset'] = True
@@ -338,27 +352,52 @@ def staminaCalc(swingData: list):
 
 
     return staminaList
-def swingCurveCalc(swingData: list):
-    curveList: list = []
-    # TODO calculate swing curve between blocks based on their angels and positions (alwayd forwards looking at last block)
+def swingCurveCalc(swingData: list, leftOrRight):
+    # TODO build list of list of list of points
     # TODO calculate angle from position
     # calculate bezier points using bezier curve function
-    # calculate bezier angles from points
-    # subtract position angle from all bezier angles
-    # take the deritive of the new bezier angles
-    # peak of 2nd deritive is difficulty of the curve, or known angle change acceleration since no deritive = position, 1st = velocity, 2nd = accleration
-    # Split the peak curve difficulty into their respective swing in swingdata
-    for i in range(0, len(swingData)):
-        if i < 0:
-            pBlockPos = 0
+    # calculate bezier speed from points
+    # get the minimum speed of curve
+    swingData[0]['pathStrain'] = 0  # First Note cannot really have any path strain
+    for i in range(1, len(swingData)):
+        point0 = swingData[i-1]['exitPos']      # Curve Beginning
+        point1x = point0[0] + 0.25 * math.cos(math.radians(swingData[i-1]['angle']))
+        point1y = point0[1] + 0.25 * math.sin(math.radians(swingData[i-1]['angle']))
+        point1 = [point1x, point1y] #Curve Control Point
+        point3 = swingData[i]['entryPos']       # Curve Ending
+        point2x = point3[0] - 0.25 * math.cos(math.radians(swingData[i]['angle']))
+        point2y = point3[1] - 0.25 * math.sin(math.radians(swingData[i]['angle']))
+        point2 = [point2x, point2y]     #Curve Control Point
+        points = [point0, point1, point2, point3]
+        xvals, yvals = bezier_curve(points, nTimes=10)
+        xvals.reverse()
+        yvals.reverse()
+        speedList = []
+        angleList = []
+        for f in range(1, min(len(xvals), len(yvals))): 
+            speedList.append(math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2))
+            angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
+        
+        # from matplotlib import pyplot as plt        #   Test
+        # fig, ax = plt.subplots(figsize = (15, 8))
+        # ax.plot(xvals, yvals, label='curve path')
+        # xpoints = [p[0] for p in points]
+        # ypoints = [p[1] for p in points]
+        # ax.plot(xvals, yvals, label='curve path')
+        # ax.plot(xpoints, ypoints, "ro")
+        # ax.set_xticks(np.linspace(0,1.333333333,5))
+        # ax.set_yticks(np.linspace(0,1,4))
+        # #plt.xlim(0,1.3333333)
+        # #plt.ylim(0,1)
+        # plt.legend()
+        # plt.show()
 
-
-
-            peakCurveDeritive = True
-            curveList.append()
-        else:
-            curveList[i] = 0
-    return curveList
+        # speedList.sort()        # Sort List from Lowest speed to highest
+        curveComplexity = 0.004 / average(speedList)
+        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * 0.25):], swingData[i]['forehand'], leftOrRight) / len(angleList)
+        # curveComplexity = min(speedList)
+        swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain
+    return swingData
 def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
     combinedArray = sorted(combinedArray, key=lambda x: x[f'{key}'])  # once combined, sort by time
@@ -384,16 +423,23 @@ def calculateTech(mapData):
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     bombData = splitMapData(mapData, 2)
+    
     LeftSwingData = swingProcesser(LeftMapData)
     RightSwingData = swingProcesser(RightMapData)
+    
     LeftPatternData = patternSplitter(LeftSwingData)
     RightPatternData = patternSplitter(RightSwingData)
     
     LeftSwingData = parityPredictor(LeftPatternData, bombData, False)
     RightSwingData = parityPredictor(RightPatternData, bombData, True)
     
+    LeftSwingData = swingCurveCalc(LeftSwingData, False)
+    RightSwingData = swingCurveCalc(RightSwingData, True)
+    
+
+    
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
-    StrainList = [strain['strain'] for strain in SwingData]
+    StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     tech = average(StrainList)
     
     
@@ -422,13 +468,6 @@ else:
 calculateTech(mapData)
 t1 = time.time()
 print(f'Execution Time = {t1-t0}')
-
-
-
-
-
-
-
 
 
 print("Done")
