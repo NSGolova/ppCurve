@@ -494,7 +494,8 @@ def techCalculation(mapData, isuser=True):
         maptype = 3
     tech = techOperations(mapData, isuser)
     t1 = time.time()
-    print(f'Execution Time = {t1-t0}')
+    if isuser:
+        print(f'Execution Time = {t1-t0}')
     return tech
     
 
