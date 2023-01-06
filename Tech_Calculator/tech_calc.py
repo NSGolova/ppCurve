@@ -379,7 +379,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         point2y = point3[1] - 0.5 * math.sin(math.radians(swingData[i]['angle']))
         point2 = [point2x, point2y]     #Curve Control Point
         points = [point0, point1, point2, point3]
-        xvals, yvals = bezier_curve(points, nTimes=25)
+        xvals, yvals = bezier_curve(points, nTimes=50)
         xvals.reverse()
         yvals.reverse()
         speedList = []
@@ -387,7 +387,10 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         for f in range(1, min(len(xvals), len(yvals))): 
             speedList.append(math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2))
             angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
-        lookback = -1.125 * average([Stra['angleStrain'] for Stra in swingData]) + 0.9125                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
+        if swingData[i]['reset']:       # If the pattern is a reset, look less far back
+            lookback = 0.75                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
+        else:
+            lookback = 0.333333
         curveComplexity = len(speedList) * average(speedList[int(len(speedList) * lookback):]) / 20
         pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * lookback):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
 
