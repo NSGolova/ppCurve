@@ -428,7 +428,7 @@ def loadMapData(mapID: str, diffNum: int):
         print("Enter to Exit")
         input()
         exit()
-def calculateTech(mapData):
+def techOperations(mapData):
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     bombData = splitMapData(mapData, 2)
@@ -445,8 +445,6 @@ def calculateTech(mapData):
     LeftSwingData = swingCurveCalc(LeftSwingData, False)
     RightSwingData = swingCurveCalc(RightSwingData, True)
     
-
-    
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
@@ -456,29 +454,30 @@ def calculateTech(mapData):
     print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
     return tech
 
-#'forehand': mostLikelyParityChecker(swingData, max(5, len(swingData)))
-print("input map key")
-mapKey = input()
-mapKey = mapKey.replace("!bsr ", "")
-infoData = loadInfoData(mapKey)
-print(f'Choose Diff num: {findStandardDiffs(findSongPath(mapKey))}')
-diffNum = int(input())
-mapData = loadMapData(mapKey, diffNum)
-t0 = time.time()
-try:
-    mapVersion = parse(mapData['version'])
-except KeyError:
-    mapVersion = parse(mapData['_version'])
-if mapVersion < parse('3.0.0'):     # Try to figure out if the map is the V2 or V3 format
-    maptype = 2
-    mapData = V2_to_V3(mapData)
-else:
-    maptype = 3
+def techCalculation(mapData):
+    t0 = time.time()
+    try:
+        mapVersion = parse(mapData['version'])
+    except KeyError:
+        mapVersion = parse(mapData['_version'])
+    if mapVersion < parse('3.0.0'):     # Try to figure out if the map is the V2 or V3 format
+        maptype = 2
+        mapData = V2_to_V3(mapData)     # Convert to V3
+    else:
+        maptype = 3
+    tech = techOperations(mapData)
+    t1 = time.time()
+    print(f'Execution Time = {t1-t0}')
+    return tech
 
-calculateTech(mapData)
-t1 = time.time()
-print(f'Execution Time = {t1-t0}')
-
-
-print("Done")
-input()
+if __name__ == "__main__":
+    print("input map key")
+    mapKey = input()
+    mapKey = mapKey.replace("!bsr ", "")
+    infoData = loadInfoData(mapKey)
+    print(f'Choose Diff num: {findStandardDiffs(findSongPath(mapKey))}')
+    diffNum = int(input())
+    mapData = loadMapData(mapKey, diffNum)
+    techCalculation(mapData)
+    print("Done")
+    input()
