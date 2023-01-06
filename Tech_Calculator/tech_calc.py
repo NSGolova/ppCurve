@@ -2,7 +2,7 @@ import os
 import json
 import math
 import sys
-sys.path.insert(0, 'E:\Games\Beat Saber\Programming\ppCurve\Tech_Calculator')
+sys.path.insert(0, 'Tech_Calculator')
 import _BackendFiles.MapDownloader as MapDownloader
 import _BackendFiles.setup as setup
 from packaging.version import parse
