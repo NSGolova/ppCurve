@@ -149,45 +149,40 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
 
 
 
-
-
-print("Re-test tech calculator? y/n")
-retest = input()
-if retest.lower() == 'y':
-    retest = True
-    
-    print("Version no#")
-    try:
-        f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'r') # Use This to try and find an existing file
-        versionNum = int(f.read()) + 1
-        f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'w')
-        f.write(str(versionNum))
-        f.close()
-    except FileNotFoundError:
+if __name__ == "__main__":
+    print("Re-test tech calculator? y/n")
+    retest = input()
+    if retest.lower() == 'y':
+        retest = True
         try:
-            f = open('_BackendFiles/techversion.txt', 'r')  # Use This to try and find an existing file
+            f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'r') # Use This to try and find an existing file
             versionNum = int(f.read()) + 1
             f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'w')
             f.write(str(versionNum))
             f.close()
         except FileNotFoundError:
             try:
+                f = open('_BackendFiles/techversion.txt', 'r')  # Use This to try and find an existing file
+                versionNum = int(f.read()) + 1
                 f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'w')
-            except:
-                f = open('_BackendFiles/techversion.txt', 'w')
-            f.write(str(0))
-            versionNum = 0
-    finally:
-        f.close()
-else:
-    retest = False
-    versionNum = -1
+                f.write(str(versionNum))
+                f.close()
+            except FileNotFoundError:
+                try:
+                    f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'w')
+                except:
+                    f = open('_BackendFiles/techversion.txt', 'w')
+                f.write(str(0))
+                versionNum = 0
+        finally:
+            f.close()
+    else:
+        retest = False
+        versionNum = -1
 
-for i in range(0, len(playerTestList)):
-    newPlayerStats(playerTestList[i], 500, retest, versionNum)
-    print(f"Finished {playerTestList[i]}")
-
-
-print("done")
-print("Press Enter to Exit")
-input()
+    for i in range(0, len(playerTestList)):
+        newPlayerStats(playerTestList[i], 500, retest, versionNum)
+        print(f"Finished {playerTestList[i]}")
+    print("done")
+    print("Press Enter to Exit")
+    input()
