@@ -373,9 +373,14 @@ def swingCurveCalc(swingData: list, leftOrRight):
         for f in range(1, min(len(xvals), len(yvals))): 
             speedList.append(math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2))
             angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
-        
+       
+        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * 0.35):]) / 20
+        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * 0.35):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
+
+        # print(f"curveComplexity {curveComplexity}")
+        # print(f"pathAngleStrain {pathAngleStrain}")
         # from matplotlib import pyplot as plt        #   Test
-        # fig, ax = plt.subplots(figsize = (15, 8))
+        # fig, ax = plt.subplots(figsize = (8, 5))
         # ax.plot(xvals, yvals, label='curve path')
         # xpoints = [p[0] for p in points]
         # ypoints = [p[1] for p in points]
@@ -388,17 +393,15 @@ def swingCurveCalc(swingData: list, leftOrRight):
         # plt.legend()
         # plt.show()
 
-        # speedList.sort()        # Sort List from Lowest speed to highest
-        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * 0.25):]) / 20
-        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * 0.25):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
-        # curveComplexity = min(speedList)
+
+
         testData.append({'curveComplexityStrain': curveComplexity, 'pathAngleStrain': pathAngleStrain})
         swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain
     if leftOrRight:
         hand = 'Right Handed'
     else:
         hand = 'Left Handed'
-    print(f"Average {hand} hitAngelStrain {average([Stra['angleStrain'] for Stra in swingData])}")
+    print(f"Average {hand} hitAngleStrain {average([Stra['angleStrain'] for Stra in swingData])}")
     print(f"Average {hand} curveComplexityStrain {average([Stra['curveComplexityStrain'] for Stra in testData])}")
     print(f"Average {hand} pathAngleStrain {average([Stra['pathAngleStrain'] for Stra in testData])}")
 
