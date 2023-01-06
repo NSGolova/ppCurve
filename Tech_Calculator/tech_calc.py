@@ -1,7 +1,8 @@
-from asyncio.windows_events import NULL
 import os
 import json
 import math
+import sys
+sys.path.insert(0, 'E:\Games\Beat Saber\Programming\ppCurve\Tech_Calculator')
 import _BackendFiles.MapDownloader as MapDownloader
 import _BackendFiles.setup as setup
 from packaging.version import parse
@@ -20,7 +21,10 @@ left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 # 
 def average(lst):   # Returns the averate of a list of integers
-    return sum(lst) / len(lst)
+    if len(lst) > 0:
+        return sum(lst) / len(lst)
+    else:
+        return 0
 def bernstein_poly(i, n, t):    # For later
     """
      The Bernstein polynomial of n, i as a function of t
@@ -58,7 +62,10 @@ def load_json_as_dict(path: str):    # Reads, then loads and returns JSON as a d
         # dat = json.load(json_dat)
     return dat
 def findSongPath(song_id: str, isuser=True): # Returns the song folder path by searching the custom songs folder
-    bsPath = f"{setup.load_BSPath()}Beat Saber_Data\CustomLevels/"
+    if isuser:
+        bsPath = f"{setup.load_BSPath()}Beat Saber_Data\CustomLevels/"
+    else:
+        bsPath = "_songCache/"
     song_options = os.listdir(bsPath)
     songFound = False
     for song in song_options:
@@ -323,16 +330,22 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
         testData2 = copy.deepcopy(patternData[p])
         for i in range(0, len(testData1)):  # Build Forehand TestData Build
             if i > 0:
-                testData1[i]['forehand'] = not testData1[i-1]['forehand']     
+                if testData1[i]['angle'] - testData1[i]['angle'] > 45:     # If angles are too similar, assume reset since a write roll of that degree is crazy
+                    testData1[i]['forehand'] = not testData1[i-1]['forehand']
+                else:
+                    testData1[i]['forehand'] = testData1[i-1]['forehand']
             else:
                 testData1[0]['forehand'] = True
-        forehandTest = swingAngleStrainCalc(testData1, leftOrRight)    # Test data
-        for i in range(0, len(testData2)):  # Build Banckhand Test Data
+        for i in range(0, len(testData2)):  # Build Banckhand TestData
             if i > 0:
-                testData2[i]['forehand'] = not testData2[i-1]['forehand']     
+                if testData2[i]['angle'] - testData2[i]['angle'] > 45:     # Again, if angles are too similar, assume reset since a write roll of that degree is crazy
+                    testData2[i]['forehand'] = not testData2[i-1]['forehand']
+                else:
+                    testData2[i]['forehand'] = testData2[i-1]['forehand']
             else:
                 testData2[0]['forehand'] = False
-        backhandTest = swingAngleStrainCalc(testData2, leftOrRight)    # Test data
+        forehandTest = swingAngleStrainCalc(testData1, leftOrRight)    # Test Data
+        backhandTest = swingAngleStrainCalc(testData2, leftOrRight)    # 
         if forehandTest <= backhandTest:    #Prefer forehand starts over backhand if equal
             newPatternData += testData1      # Forehand gave a lower stress value, therefore is the best option in terms of hand placement for the pattern
         elif forehandTest > backhandTest:
@@ -351,7 +364,9 @@ def staminaCalc(swingData: list):
 
 
     return staminaList
-def swingCurveCalc(swingData: list, leftOrRight):
+def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
+    if len(swingData) == 0:
+        return swingData
     swingData[0]['pathStrain'] = 0  # First Note cannot really have any path strain
     testData = []
     for i in range(1, len(swingData)):
@@ -400,9 +415,10 @@ def swingCurveCalc(swingData: list, leftOrRight):
         hand = 'Right Handed'
     else:
         hand = 'Left Handed'
-    print(f"Average {hand} hitAngleStrain {average([Stra['angleStrain'] for Stra in swingData])}")
-    print(f"Average {hand} curveComplexityStrain {average([Stra['curveComplexityStrain'] for Stra in testData])}")
-    print(f"Average {hand} pathAngleStrain {average([Stra['pathAngleStrain'] for Stra in testData])}")
+    if isuser:
+        print(f"Average {hand} hitAngleStrain {average([Stra['angleStrain'] for Stra in swingData])}")
+        print(f"Average {hand} curveComplexityStrain {average([Stra['curveComplexityStrain'] for Stra in testData])}")
+        print(f"Average {hand} pathAngleStrain {average([Stra['pathAngleStrain'] for Stra in testData])}")
 
 
     return swingData
@@ -415,19 +431,19 @@ def loadInfoData(mapID: str):
     infoPath = findInfoFile(songPath)
     infoData = load_json_as_dict(infoPath)
     return infoData
-def loadMapData(mapID: str, diffNum: int):
-    songPath = findSongPath(mapID)
+def loadMapData(mapID: str, diffNum: int, isuser=True):
+    songPath = findSongPath(mapID, isuser)
     diffList = findStandardDiffs(songPath)
     if diffNum in diffList:     # Check if the song is listed in the Info.dat file, otherwise exits programs
         diffPath = diffNum_to_diffPath(songPath, diffNum)
         mapData = load_json_as_dict(diffPath)
         return mapData
     else:
-        print("Map doesn't exist locally. Are you sure you have the updated version?")
+        print(f"Map {mapID} Diff {diffNum} doesn't exist locally. Are you sure you have the updated version?")
         print("Enter to Exit")
         input()
         exit()
-def techOperations(mapData):
+def techOperations(mapData, isuser=True):
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     bombData = splitMapData(mapData, 2)
@@ -441,33 +457,45 @@ def techOperations(mapData):
     LeftSwingData = parityPredictor(LeftPatternData, bombData, False)
     RightSwingData = parityPredictor(RightPatternData, bombData, True)
     
-    LeftSwingData = swingCurveCalc(LeftSwingData, False)
-    RightSwingData = swingCurveCalc(RightSwingData, True)
+    LeftSwingData = swingCurveCalc(LeftSwingData, False, isuser)
+    RightSwingData = swingCurveCalc(RightSwingData, True, isuser)
     
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
     
-    
-    print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
+    if isuser:
+        print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
     return tech
 
-def techCalculation(mapData):
+def techCalculation(mapData, isuser=True):
     t0 = time.time()
     try:
         mapVersion = parse(mapData['version'])
     except KeyError:
-        mapVersion = parse(mapData['_version'])
+        try:
+            mapVersion = parse(mapData['_version'])
+        except KeyError:
+            try:
+                mapData['_notes']
+                mapVersion = parse('2.0.0')
+            except KeyError:
+                mapData['colorNotes']
+                mapVersion = parse('3.0.0')
+
     if mapVersion < parse('3.0.0'):     # Try to figure out if the map is the V2 or V3 format
         maptype = 2
         mapData = V2_to_V3(mapData)     # Convert to V3
     else:
         maptype = 3
-    tech = techOperations(mapData)
+    tech = techOperations(mapData, isuser)
     t1 = time.time()
     print(f'Execution Time = {t1-t0}')
     return tech
+    
+
+    
 
 if __name__ == "__main__":
     print("input map key")

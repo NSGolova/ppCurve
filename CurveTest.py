@@ -2,6 +2,7 @@ import json
 import requests
 import numpy as m
 import os
+import Tech_Calculator.tech_calc as tech_calc
 
 playerTestList = [2769016623220259,76561198059961776,76561198072855418,76561198075923914,76561198255595858,76561198404774259, 
     76561198225048252, 76561198110147969, 76561198081152434, 76561198204808809, 76561198072431907, 76561198989311828, 76561198960449289, 
@@ -15,7 +16,7 @@ def searchDiffNum(diffNum, diffList):
         if diffList[f]['value'] == diffNum:
             return f
 
-def newPlayerStats(userID, scoreCount):
+def newPlayerStats(userID, scoreCount, retest=False):
     s = requests.Session()
     AiJSON = {}
     newStats = []
@@ -26,12 +27,16 @@ def newPlayerStats(userID, scoreCount):
 
     result = s.get(f"https://api.beatleader.xyz/player/{userID}/")
     playerName = json.loads(result.text)['name']
-
+    if retest:
+        print("Will recalulate and update tech data")
     for i in range(0, len(playerJSON['data'])):
         newStats.append({})
         if playerJSON['data'][i]['pp'] != 0:
-            diffNum = searchDiffNum(playerJSON['data'][i]['leaderboard']['difficulty']['value'], playerJSON['data'][i]['leaderboard']['song']['difficulties'])
-            if playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffNum]['status'] == 3:
+            diffNum = playerJSON['data'][i]['leaderboard']['difficulty']['value']
+            diffIndex = searchDiffNum(diffNum, playerJSON['data'][i]['leaderboard']['song']['difficulties'])
+            key = playerJSON['data'][i]['leaderboard']['song']['id']
+            key = key.replace('x', '')
+            if playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['status'] == 3:
         
                 speed = 1
                 if 'FS' in playerJSON['data'][i]['modifiers'].split(','):
@@ -45,16 +50,28 @@ def newPlayerStats(userID, scoreCount):
                     with open(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}/{playerJSON['data'][i]['leaderboard']['difficulty']['value']} {speed}.json", encoding='ISO-8859-1') as score_json:
                         AiJSON = json.load(score_json)
                     print("Cache Hit")
+                    if retest:
+                        mapData = tech_calc.loadMapData(key, diffNum, False)
+                        AiJSON['tech'] = max(tech_calc.techCalculation(mapData, False) + 0.75, 1)
+                        try:
+                            os.mkdir(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}")
+                        except:
+                            print("Existing Folder")
+                        with open(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}/{playerJSON['data'][i]['leaderboard']['difficulty']['value']} {speed}.json", 'w') as score_json:
+                            json.dump(AiJSON, score_json, indent=4)
+
                 except:
-                    print("Requesting from AI")
+                    print("Requesting from AI and Calculator")
                     result = s.get(
                         f"https://bs-replays-ai.azurewebsites.net/json/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}/{playerJSON['data'][i]['leaderboard']['difficulty']['value']}/time-scale/{speed}")
                     if result.text == 'Not found':
-                        newStar = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffNum]['stars']
+                        newStar = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['stars']
                         AiJSON['balanced'] = newStar
-                        AiJSON['expected_acc'] = 1
+                        # AiJSON['expected_acc'] = 1
                     else:
                         AiJSON = json.loads(result.text)
+                    mapData = tech_calc.loadMapData(key, diffNum, False)
+                    AiJSON['tech'] = max(tech_calc.techCalculation(mapData, False) + 0.75, 1)
                     try:
                         os.mkdir(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}")
                     except:
@@ -70,8 +87,8 @@ def newPlayerStats(userID, scoreCount):
 
 
                 acc = playerJSON['data'][i]['accuracy']
-                tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
-
+                # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
+                tech = AiJSON['tech']
                 passPP = 20 * newStar
                 accPP = 30 * acc ** tech + \
                     min((tech * (2 * tech + newStar)) / (-1 * acc + 1.01 - (tech / 250)), 1600 * newStar)
@@ -79,9 +96,9 @@ def newPlayerStats(userID, scoreCount):
 
                 
                 newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
-                newStats[i]['diff'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffNum]['difficultyName']
+                newStats[i]['diff'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['difficultyName']
                 newStats[i]['newStar'] = newStar
-                newStats[i]['oldStar'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffNum]['stars']
+                newStats[i]['oldStar'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['stars']
                 newStats[i]['Modifiers'] = playerJSON['data'][i]['modifiers']
                 newStats[i]['oldPP'] = playerJSON['data'][i]['pp']
                 newStats[i]['acc'] = acc
@@ -128,11 +145,15 @@ def newPlayerStats(userID, scoreCount):
 
 
 
-
-
+print("Re-test tech calculator? y/n")
+retest = input()
+if retest.lower() == 'y':
+    retest = True
+else:
+    retest = False
 
 for i in range(0, len(playerTestList)):
-    newPlayerStats(playerTestList[i], 500)
+    newPlayerStats(playerTestList[i], 500, retest)
     print(f"Finished {playerTestList[i]}")
 
 

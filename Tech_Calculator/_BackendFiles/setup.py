@@ -3,7 +3,7 @@ import os
 import csv
 def load_BSPath():
     try:
-        f = open('Tech Calculator/_BackendFiles/bs_path.txt', 'r')
+        f = open('Tech_Calculator/_BackendFiles/bs_path.txt', 'r')
         bsPath = f.read()
     except FileNotFoundError:
         try:
@@ -16,7 +16,7 @@ def load_BSPath():
             bsPath = input()
             if bsPath[-1] not in ['\\', '/']:  # Checks if song path is empty
                 bsPath += '\\'
-            f = open('Tech Calculator/_BackendFiles/bs_path.txt', 'w')
+            f = open('Tech_Calculator/_BackendFiles/bs_path.txt', 'w')
             f.write(bsPath)
     finally:
         f.close()
