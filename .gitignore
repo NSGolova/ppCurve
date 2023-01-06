@@ -6,3 +6,4 @@ _BackendFiles/__pycache__/
 *.pyc
 _TestFiles/
 _songCache/
+techversion.txt
