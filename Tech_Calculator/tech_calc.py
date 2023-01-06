@@ -388,7 +388,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
             speedList.append(math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2))
             angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
         if swingData[i]['reset']:       # If the pattern is a reset, look less far back
-            lookback = 0.75                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
+            lookback = 0.80                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
         else:
             lookback = 0.333333
         curveComplexity = len(speedList) * average(speedList[int(len(speedList) * lookback):]) / 20
