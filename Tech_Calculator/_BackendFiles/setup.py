@@ -16,7 +16,10 @@ def load_BSPath():
             bsPath = input()
             if bsPath[-1] not in ['\\', '/']:  # Checks if song path is empty
                 bsPath += '\\'
-            f = open('Tech_Calculator/_BackendFiles/bs_path.txt', 'w')
+            try:
+                f = open('Tech_Calculator/_BackendFiles/bs_path.txt', 'w')
+            except:
+                f = open('_BackendFiles/bs_path.txt', 'w')
             f.write(bsPath)
     finally:
         f.close()

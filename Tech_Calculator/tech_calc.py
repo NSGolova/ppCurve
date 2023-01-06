@@ -330,7 +330,7 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
         testData2 = copy.deepcopy(patternData[p])
         for i in range(0, len(testData1)):  # Build Forehand TestData Build
             if i > 0:
-                if testData1[i]['angle'] - testData1[i]['angle'] > 45:     # If angles are too similar, assume reset since a write roll of that degree is crazy
+                if abs(testData1[i]['angle'] - testData1[i-1]['angle']) > 45:     # If angles are too similar, assume reset since a write roll of that degree is crazy
                     testData1[i]['forehand'] = not testData1[i-1]['forehand']
                 else:
                     testData1[i]['forehand'] = testData1[i-1]['forehand']
@@ -338,7 +338,7 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
                 testData1[0]['forehand'] = True
         for i in range(0, len(testData2)):  # Build Banckhand TestData
             if i > 0:
-                if testData2[i]['angle'] - testData2[i]['angle'] > 45:     # Again, if angles are too similar, assume reset since a write roll of that degree is crazy
+                if abs(testData2[i]['angle'] - testData2[i-1]['angle']) > 45:     # Again, if angles are too similar, assume reset since a write roll of that degree is crazy
                     testData2[i]['forehand'] = not testData2[i-1]['forehand']
                 else:
                     testData2[i]['forehand'] = testData2[i-1]['forehand']
@@ -387,9 +387,9 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         for f in range(1, min(len(xvals), len(yvals))): 
             speedList.append(math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2))
             angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
-       
-        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * 0.35):]) / 20
-        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * 0.35):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
+        lookback = -1.125 * average([Stra['angleStrain'] for Stra in swingData]) + 0.9125                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
+        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * lookback):]) / 20
+        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * lookback):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
 
         # print(f"curveComplexity {curveComplexity}")
         # print(f"pathAngleStrain {pathAngleStrain}")

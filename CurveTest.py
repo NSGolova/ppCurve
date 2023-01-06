@@ -16,7 +16,7 @@ def searchDiffNum(diffNum, diffList):
         if diffList[f]['value'] == diffNum:
             return f
 
-def newPlayerStats(userID, scoreCount, retest=False):
+def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
     s = requests.Session()
     AiJSON = {}
     newStats = []
@@ -50,15 +50,21 @@ def newPlayerStats(userID, scoreCount, retest=False):
                     with open(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}/{playerJSON['data'][i]['leaderboard']['difficulty']['value']} {speed}.json", encoding='ISO-8859-1') as score_json:
                         AiJSON = json.load(score_json)
                     print("Cache Hit")
-                    if retest:
-                        mapData = tech_calc.loadMapData(key, diffNum, False)
-                        AiJSON['tech'] = max(tech_calc.techCalculation(mapData, False) + 0.75, 1)
-                        try:
-                            os.mkdir(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}")
-                        except:
-                            print("Existing Folder")
-                        with open(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}/{playerJSON['data'][i]['leaderboard']['difficulty']['value']} {speed}.json", 'w') as score_json:
-                            json.dump(AiJSON, score_json, indent=4)
+                    try:
+                        cacheVNum = AiJSON['versionNum']
+                    except:
+                        cacheVNum = -1
+                    finally:
+                        if retest and cacheVNum != versionNum:
+                            mapData = tech_calc.loadMapData(key, diffNum, False)
+                            AiJSON['tech'] = max(tech_calc.techCalculation(mapData, False) + 0.75, 1)
+                            AiJSON['versionNum'] = versionNum
+                            try:
+                                os.mkdir(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}")
+                            except:
+                                print("Existing Folder")
+                            with open(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}/{playerJSON['data'][i]['leaderboard']['difficulty']['value']} {speed}.json", 'w') as score_json:
+                                json.dump(AiJSON, score_json, indent=4)
 
                 except:
                     print("Requesting from AI and Calculator")
@@ -149,11 +155,36 @@ print("Re-test tech calculator? y/n")
 retest = input()
 if retest.lower() == 'y':
     retest = True
+    
+    print("Version no#")
+    try:
+        f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'r') # Use This to try and find an existing file
+        versionNum = int(f.read()) + 1
+        f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'w')
+        f.write(str(versionNum))
+        f.close()
+    except FileNotFoundError:
+        try:
+            f = open('_BackendFiles/techversion.txt', 'r')  # Use This to try and find an existing file
+            versionNum = int(f.read()) + 1
+            f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'w')
+            f.write(str(versionNum))
+            f.close()
+        except FileNotFoundError:
+            try:
+                f = open('Tech_Calculator/_BackendFiles/techversion.txt', 'w')
+            except:
+                f = open('_BackendFiles/techversion.txt', 'w')
+            f.write(str(0))
+            versionNum = 0
+    finally:
+        f.close()
 else:
     retest = False
+    versionNum = -1
 
 for i in range(0, len(playerTestList)):
-    newPlayerStats(playerTestList[i], 500, retest)
+    newPlayerStats(playerTestList[i], 500, retest, versionNum)
     print(f"Finished {playerTestList[i]}")
 
 
