@@ -8,7 +8,6 @@ from packaging.version import parse
 import numpy as np
 from scipy.special import comb
 import time
-from collections import deque
 import copy
 
 # Works for both V2 and V3
