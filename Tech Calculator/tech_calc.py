@@ -475,8 +475,13 @@ if __name__ == "__main__":
     mapKey = input()
     mapKey = mapKey.replace("!bsr ", "")
     infoData = loadInfoData(mapKey)
-    print(f'Choose Diff num: {findStandardDiffs(findSongPath(mapKey))}')
-    diffNum = int(input())
+    availableDiffs = findStandardDiffs(findSongPath(mapKey))
+    if len(availableDiffs) > 1:
+        print(f'Choose Diff num: {availableDiffs}')
+        diffNum = int(input())
+    else:
+        diffNum = availableDiffs[0]
+        print(f'autoloading {diffNum}')
     mapData = loadMapData(mapKey, diffNum)
     techCalculation(mapData)
     print("Done")
