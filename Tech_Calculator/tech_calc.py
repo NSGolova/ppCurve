@@ -432,11 +432,13 @@ def diffToPass(swingData, bpm):
         qST.append(swingData[i]['angleStrain'] + swingData[i]['pathStrain'])
         SSStress += qST[-1]
         data[-1]['stressAve'] = SSStress / smoothing
-        difficultyIndex.append(data[-1]['swingSpeedAve'] * data[-1]['stressAve'])
+        difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667) * 1.5
+        data[-1]['difficulty'] = difficulty
+        difficultyIndex.append(difficulty)
     print(f"average speege {average([temp['swingSpeedAve'] for temp in data])}")
     print(f"average sdress {average([temp['stressAve'] for temp in data])}")
     difficultyIndex.sort(reverse=True)      #Sort list by most difficult
-    return average(difficultyIndex[:smoothing - 1])          # Use the top 8 swings averaged as the return
+    return average(difficultyIndex[:min(smoothing * 8, len(difficultyIndex))])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
         return swingData
@@ -504,24 +506,27 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         swingData[i]['curveComplexity'] = curveComplexity
         swingData[i]['pathAngleStrain'] = pathAngleStrain
         swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain + positionComplexity
+    avehitAngleStrain = average([Stra['angleStrain'] for Stra in swingData])
+    avepositionComplexity = average([Stra['positionComplexity'] for Stra in testData])
+    avecurveComplexityStrain = average([Stra['curveComplexityStrain'] for Stra in testData])
+    avepathAngleStrain = average([Stra['pathAngleStrain'] for Stra in testData])
+    returnDict = {'hitAngleStrain': avehitAngleStrain, 'positionComplexity': avepositionComplexity, 'curveComplexityStrain': avecurveComplexityStrain, 'pathAngleStrain': avepathAngleStrain}
     if leftOrRight:
         hand = 'Right Handed'
     else:
         hand = 'Left Handed'
     if isuser:
-        print(f"Average {hand} hitAngleStrain {average([Stra['angleStrain'] for Stra in swingData])}")
-        print(f"Average {hand} positionComplexity {average([Stra['positionComplexity'] for Stra in testData])}")
-        print(f"Average {hand} curveComplexityStrain {average([Stra['curveComplexityStrain'] for Stra in testData])}")
-        print(f"Average {hand} pathAngleStrain {average([Stra['pathAngleStrain'] for Stra in testData])}")
-
-
-    return swingData
+        print(f"Average {hand} hitAngleStrain {avehitAngleStrain}")
+        print(f"Average {hand} positionComplexity {avepositionComplexity}")
+        print(f"Average {hand} curveComplexityStrain {avecurveComplexityStrain}")
+        print(f"Average {hand} pathAngleStrain {avepathAngleStrain}")
+    return swingData, returnDict
 def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
     combinedArray = sorted(combinedArray, key=lambda x: x[f'{key}'])  # once combined, sort by time
     return combinedArray
 
-def techOperations(mapData, bpm, isuser=True):
+def techOperations(mapData, bpm, isuser=True, verbose=True):
 
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
@@ -536,25 +541,30 @@ def techOperations(mapData, bpm, isuser=True):
     LeftSwingData = parityPredictor(LeftPatternData, bombData, False)
     RightSwingData = parityPredictor(RightPatternData, bombData, True)
     
-    LeftSwingData = swingCurveCalc(LeftSwingData, False, isuser)
-    RightSwingData = swingCurveCalc(RightSwingData, True, isuser)
+    LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
+    RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
     
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
-    passNum = diffToPass(SwingData, bpm)
+    passNum = max(diffToPass(LeftSwingData, bpm), diffToPass(RightSwingData, bpm))
+
+    if verbose:
+        returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum}
+    else:
+        returnDict = {'tech': tech, 'passing_difficulty': passNum}
     if isuser:
         print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
         print(f"Calculated pass diff = {passNum}")
-    return tech
+    return returnDict
 
 
 
-def mapCalculation(mapData, bpm, isuser=True):
+def mapCalculation(mapData, bpm, isuser=True, verbose=True):
     t0 = time.time()
     newMapData = mapPrep(mapData)
-    data = {'tech': techOperations(newMapData, bpm, isuser)}
+    data = techOperations(newMapData, bpm, isuser, verbose)
     t1 = time.time()
     if isuser:
         print(f'Execution Time = {t1-t0}')
@@ -577,6 +587,6 @@ if __name__ == "__main__":
         diffNum = availableDiffs[0]
         print(f'autoloading {diffNum}')
     mapData = loadMapData(mapKey, diffNum)
-    mapCalculation(mapData, bpm)
+    mapCalculation(mapData, bpm, True, True)
     print("Done")
     input()
