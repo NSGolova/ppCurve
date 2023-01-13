@@ -20,7 +20,6 @@ right_handed_angle_strain_forehand = 247.5      # Most comfortable angle to aim 
 left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 # 
-
 def load_json_as_dict(path: str):    # Reads, then loads and returns JSON as a dictionary
     with open(path, 'rb') as json_dat:
         dat = json.loads(json_dat.read())   
@@ -411,7 +410,7 @@ def staminaCalc(swingData: list):
 
 
     return staminaList
-def diffToPass(swingData, bpm, hand):
+def diffToPass(swingData, bpm, hand, isuser=True):
     bps = bpm / 60
     SSSpeed = 0         #Sum of Swing Speed
     qSS = deque()       #List of swing speed
@@ -437,8 +436,9 @@ def diffToPass(swingData, bpm, hand):
         difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667) * 1.5
         data[-1]['difficulty'] = difficulty
         difficultyIndex.append(difficulty)
-    print(f"average {hand} hand speed {average([temp['swingSpeedAve'] for temp in data])}")
-    print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
+    if isuser:
+        print(f"average {hand} hand speed {average([temp['swingSpeedAve'] for temp in data])}")
+        print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
     difficultyIndex.sort(reverse=True)      #Sort list by most difficult
     return average(difficultyIndex[:min(smoothing * 8, len(difficultyIndex))])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
@@ -550,7 +550,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
-    passNum = max(diffToPass(LeftSwingData, bpm, 'left'), diffToPass(RightSwingData, bpm, 'right'))
+    passNum = max(diffToPass(LeftSwingData, bpm, 'left', isuser), diffToPass(RightSwingData, bpm, 'right', isuser))
 
     if verbose:
         returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum}
@@ -561,8 +561,6 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         print(f"Calculated pass diff = {passNum}")
     return returnDict
 
-
-
 def mapCalculation(mapData, bpm, isuser=True, verbose=True):
     t0 = time.time()
     newMapData = mapPrep(mapData)
@@ -571,9 +569,6 @@ def mapCalculation(mapData, bpm, isuser=True, verbose=True):
     if isuser:
         print(f'Execution Time = {t1-t0}')
     return data
-    
-
-    
 
 if __name__ == "__main__":
     print("input map key")
@@ -589,6 +584,6 @@ if __name__ == "__main__":
         diffNum = availableDiffs[0]
         print(f'autoloading {diffNum}')
     mapData = loadMapData(mapKey, diffNum)
-    mapCalculation(mapData, bpm, True, True)
+    mapCalculation(mapData, bpm, False, True)
     print("Done")
     input()
