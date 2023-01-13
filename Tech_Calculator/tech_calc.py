@@ -584,6 +584,6 @@ if __name__ == "__main__":
         diffNum = availableDiffs[0]
         print(f'autoloading {diffNum}')
     mapData = loadMapData(mapKey, diffNum)
-    mapCalculation(mapData, bpm, False, True)
+    mapCalculation(mapData, bpm, True, True)
     print("Done")
     input()
