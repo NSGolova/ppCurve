@@ -10,6 +10,7 @@ import numpy as np
 from scipy.special import comb
 import time
 import copy
+from collections import deque
 
 # Works for both V2 and V3
 # Easy = 1, Normal = 3, Hard = 5, Expert = 7, Expert+ = 9
@@ -19,43 +20,7 @@ right_handed_angle_strain_forehand = 247.5      # Most comfortable angle to aim 
 left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 # 
-# 
-def average(lst):   # Returns the averate of a list of integers
-    if len(lst) > 0:
-        return sum(lst) / len(lst)
-    else:
-        return 0
-def bernstein_poly(i, n, t):    # For later
-    """
-     The Bernstein polynomial of n, i as a function of t
-    """
-    return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
-def bezier_curve(points, nTimes=1000):   # For later
-    """
-       Given a set of control points, return the
-       bezier curve defined by the control points.
 
-       points should be a list of lists, or list of tuples
-       such as [ [1,1], 
-                 [2,3], 
-                 [4,5], ..[Xn, Yn] ]
-        nTimes is the number of time steps, defaults to 1000
-
-        See http://processingjs.nihongoresources.com/bezierinfo/
-    """
-
-    nPoints = len(points)
-    xPoints = np.array([p[0] for p in points])
-    yPoints = np.array([p[1] for p in points])
-
-    t = np.linspace(0.0, 1.0, nTimes)
-
-    polynomial_array = np.array([ bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)   ])
-
-    xvals = np.dot(xPoints, polynomial_array)
-    yvals = np.dot(yPoints, polynomial_array)
-
-    return list(xvals), list(yvals)
 def load_json_as_dict(path: str):    # Reads, then loads and returns JSON as a dictionary
     with open(path, 'rb') as json_dat:
         dat = json.loads(json_dat.read())   
@@ -135,7 +100,60 @@ def findInfoFile(songPath: str):
         if any(x in fileSplit for x in ['info']): # List just in case info file changes name for future
             return f"{songPath}/{files[f]}"
     print("Info not found")
-    return False
+    return False 
+def loadInfoData(mapID: str):
+    songPath = findSongPath(mapID)
+    infoPath = findInfoFile(songPath)
+    infoData = load_json_as_dict(infoPath)
+    return infoData
+def loadMapData(mapID: str, diffNum: int, isuser=True):
+    songPath = findSongPath(mapID, isuser)
+    diffList = findStandardDiffs(songPath)
+    if diffNum in diffList:     # Check if the song is listed in the Info.dat file, otherwise exits programs
+        diffPath = diffNum_to_diffPath(songPath, diffNum)
+        mapData = load_json_as_dict(diffPath)
+        return mapData
+    else:
+        print(f"Map {mapID} Diff {diffNum} doesn't exist locally. Are you sure you have the updated version?")
+        print("Enter to Exit")
+        input()
+        exit()
+def average(lst):   # Returns the averate of a list of integers
+    if len(lst) > 0:
+        return sum(lst) / len(lst)
+    else:
+        return 0
+def bernstein_poly(i, n, t):    # For later
+    """
+     The Bernstein polynomial of n, i as a function of t
+    """
+    return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
+def bezier_curve(points, nTimes=1000):   # For later
+    """
+       Given a set of control points, return the
+       bezier curve defined by the control points.
+
+       points should be a list of lists, or list of tuples
+       such as [ [1,1], 
+                 [2,3], 
+                 [4,5], ..[Xn, Yn] ]
+        nTimes is the number of time steps, defaults to 1000
+
+        See http://processingjs.nihongoresources.com/bezierinfo/
+    """
+
+    nPoints = len(points)
+    xPoints = np.array([p[0] for p in points])
+    yPoints = np.array([p[1] for p in points])
+
+    t = np.linspace(0.0, 1.0, nTimes)
+
+    polynomial_array = np.array([ bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)   ])
+
+    xvals = np.dot(xPoints, polynomial_array)
+    yvals = np.dot(yPoints, polynomial_array)
+
+    return list(xvals), list(yvals)
 def V2_to_V3(V2mapData: dict):    # Convert V2 JSON to V3
     newMapData = {'colorNotes':[], 'bombNotes':[], 'obstacles':[]}  # I have to initialize this before hand or python gets grumpy
     for i in range(0, len(V2mapData['_notes'])):
@@ -161,6 +179,31 @@ def V2_to_V3(V2mapData: dict):    # Convert V2 JSON to V3
             newMapData['obstacles'][-1]['h'] = 5
         newMapData['obstacles'][-1]['d'] = V2mapData['_obstacles'][i]['_duration']
         newMapData['obstacles'][-1]['w'] = V2mapData['_obstacles'][i]['_width']
+    return newMapData
+def mapPrep(mapData):
+    try:
+        mapVersion = parse(mapData['version'])
+    except KeyError:
+        try:
+            mapVersion = parse(mapData['_version'])
+        except KeyError:
+            try:
+                mapData['_notes']
+                mapVersion = parse('2.0.0')
+            except KeyError:
+                try:
+                    mapData['colorNotes']
+                    mapVersion = parse('3.0.0')
+                except KeyError:
+                    print("Unknown Map Type. Exiting")
+                    exit()
+
+    if mapVersion < parse('3.0.0'):     # Try to figure out if the map is the V2 or V3 format
+        maptype = 2
+        newMapData = V2_to_V3(mapData)     # Convert to V3
+    else:
+        newMapData = mapData
+        maptype = 3
     return newMapData
 def splitMapData(mapData: dict, leftOrRight: int):    # False or 0 = Left, True or 1 = Right, 2 = Bombs
     if leftOrRight == 0:
@@ -235,20 +278,20 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                         break
                 
                 cBlockA = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
-                guideAngle = 1150           # A random test value to check later
-                for f in range(1, len(mapSplitData)):       # Checker that will try to find a guiding block (arrow block) for the slider angle prediction.
+                if i > 1:
+                    guideAngle = (swingData[-2]['angle'] - 180) % 360           # Use the opposite swing angle as a base starting point
+                for f in range(1, len(mapSplitData)):       # Checker that will try to find a better guiding block (arrow block) for the slider angle prediction.
                     blockIndex = i - f
                     if mapSplitData[blockIndex]['b'] < pBlockB:     # Limits check to a little after the first slider block in the group
                         break
                     if mapSplitData[blockIndex]['d'] != 8:          # Breaks out of loop when it finds an arrow block
-                        guideAngle = cut_direction_index[mapSplitData[blockIndex]['d']]
+                        guideAngle = cut_direction_index[mapSplitData[blockIndex]['d']]     # If you found an arrow, use it's angle
                         break
-                if guideAngle != 1150:      # A test to see if guideAngle was actually changed
-                    if abs(cBlockA - guideAngle) > 90:       # If this is true, the predicted angle is wrong, likely by 180 degrees wrong
-                        if cBlockA >= 180:
-                            cBlockA -= 180               # Apply Fix
-                        else:
-                            cBlockA += 180
+                if abs(cBlockA - guideAngle) > 90:       # If this is true, the predicted angle is wrong, likely by 180 degrees wrong
+                    if cBlockA >= 180:
+                        cBlockA -= 180               # Apply Fix
+                    else:
+                        cBlockA += 180                
                 swingData[-1]['angle'] = cBlockA
                 
                 xtest = (swingData[-1]['entryPos'][0] - (cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(math.radians(cBlockA))
@@ -357,6 +400,8 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
                 newPatternData[i]['reset'] = True
             else:
                 newPatternData[i]['reset'] = False
+        else:
+            newPatternData[i]['reset'] = False
     return newPatternData
 def staminaCalc(swingData: list):
     staminaList: list = []
@@ -364,6 +409,34 @@ def staminaCalc(swingData: list):
 
 
     return staminaList
+def diffToPass(swingData, bpm):
+    bps = bpm / 60
+    SSSpeed = 0         #Sum of Swing Speed
+    qSS = deque()       #List of swing speed
+    SSStress = 0             #Sum of swing stress
+    qST = deque()       #List of swing stress
+    smoothing = 8       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
+    difficultyIndex = []
+    data = []
+    for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
+        xDist = swingData[i]['entryPos'][0] - swingData[i-1]['exitPos'][0]
+        yDist = swingData[i]['entryPos'][1] - swingData[i-1]['exitPos'][1]
+        data.append({'preDistance': math.sqrt((xDist**2) + (yDist**2))})
+        if i > smoothing:       # Start removing old swings based on smoothing amount
+            SSSpeed -= qSS.popleft()
+            SSStress -= qST.popleft()
+        qSS.append(swingData[i]['frequency'] * data[-1]['preDistance'] * bps)
+        SSSpeed += qSS[-1]
+        data[-1]['swingSpeedAve'] = SSSpeed / smoothing
+
+        qST.append(swingData[i]['angleStrain'] + swingData[i]['pathStrain'])
+        SSStress += qST[-1]
+        data[-1]['stressAve'] = SSStress / smoothing
+        difficultyIndex.append(data[-1]['swingSpeedAve'] * data[-1]['stressAve'])
+    print(f"average speege {average([temp['swingSpeedAve'] for temp in data])}")
+    print(f"average sdress {average([temp['stressAve'] for temp in data])}")
+    difficultyIndex.sort(reverse=True)      #Sort list by most difficult
+    return average(difficultyIndex[:smoothing - 1])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
         return swingData
@@ -379,21 +452,36 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         point2y = point3[1] - 0.5 * math.sin(math.radians(swingData[i]['angle']))
         point2 = [point2x, point2y]     #Curve Control Point
         points = [point0, point1, point2, point3]
-        xvals, yvals = bezier_curve(points, nTimes=50)
+        xvals, yvals = bezier_curve(points, nTimes=25)      #nTimes = the resultion of the bezier curve. Higher = more accurate but slower
         xvals.reverse()
         yvals.reverse()
-        speedList = []
+        positionComplexity = 0
+        angleChangeList = []
         angleList = []
-        for f in range(1, min(len(xvals), len(yvals))): 
-            speedList.append(math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2))
+        for f in range(1, min(len(xvals), len(yvals))):
             angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
+            if f > 1:
+                angleChangeList.append(180 - abs(abs(angleList[-1] - angleList[-2]) - 180))   # Wacky formula to handle 5 - 355 situations
         if swingData[i]['reset']:       # If the pattern is a reset, look less far back
             lookback = 0.80                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
         else:
             lookback = 0.333333
-        curveComplexity = len(speedList) * average(speedList[int(len(speedList) * lookback):]) / 20
+        if i > 1:       # Will miss the very first reset if it exists but a sacrafice for speed
+            simHandCurPos = swingData[i]['entryPos']
+            if(swingData[i]['forehand'] == swingData[i-2]['forehand']):     #Start 2 swings back since it's the most likely
+                simHandPrePos = swingData[i-2]['entryPos']
+            elif(swingData[i]['forehand'] == swingData[i-1]['forehand']):
+                simHandPrePos = swingData[i-1]['entryPos']
+            else:
+                simHandPrePos = simHandCurPos
+            positionDiff = math.sqrt((simHandCurPos[1] - simHandPrePos[1])**2 + (simHandCurPos[0] - simHandPrePos[0])**2)
+            positionComplexity = positionDiff**2
+        else:
+            positionComplexity = 0
+        curveComplexity = abs((len(angleChangeList) * average(angleChangeList) - 180) / 180)   # The more the angle difference changes from 180, the more complex the path, /180 to normalize between 0 - 1
         pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * lookback):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
 
+        # print(f"positionComplexity {positionComplexity}")
         # print(f"curveComplexity {curveComplexity}")
         # print(f"pathAngleStrain {pathAngleStrain}")
         # from matplotlib import pyplot as plt        #   Test
@@ -403,6 +491,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         # ypoints = [p[1] for p in points]
         # ax.plot(xvals, yvals, label='curve path')
         # ax.plot(xpoints, ypoints, "ro")
+        # ax.plot([xvals[int(len(xvals) * 0.3333)], xvals[int(len(xvals) * 0.6667)]], [yvals[int(len(yvals) * 0.3333)], yvals[int(len(yvals) * 0.6667)]], "ro")
         # ax.set_xticks(np.linspace(0,1.333333333,5))
         # ax.set_yticks(np.linspace(0,1,4))
         # #plt.xlim(0,1.3333333)
@@ -410,16 +499,18 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         # plt.legend()
         # plt.show()
 
-
-
-        testData.append({'curveComplexityStrain': curveComplexity, 'pathAngleStrain': pathAngleStrain})
-        swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain
+        testData.append({'curveComplexityStrain': curveComplexity, 'pathAngleStrain': pathAngleStrain, 'positionComplexity': positionComplexity})
+        swingData[i]['positionComplexity'] = positionComplexity
+        swingData[i]['curveComplexity'] = curveComplexity
+        swingData[i]['pathAngleStrain'] = pathAngleStrain
+        swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain + positionComplexity
     if leftOrRight:
         hand = 'Right Handed'
     else:
         hand = 'Left Handed'
     if isuser:
         print(f"Average {hand} hitAngleStrain {average([Stra['angleStrain'] for Stra in swingData])}")
+        print(f"Average {hand} positionComplexity {average([Stra['positionComplexity'] for Stra in testData])}")
         print(f"Average {hand} curveComplexityStrain {average([Stra['curveComplexityStrain'] for Stra in testData])}")
         print(f"Average {hand} pathAngleStrain {average([Stra['pathAngleStrain'] for Stra in testData])}")
 
@@ -429,24 +520,9 @@ def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
     combinedArray = sorted(combinedArray, key=lambda x: x[f'{key}'])  # once combined, sort by time
     return combinedArray
-def loadInfoData(mapID: str):
-    songPath = findSongPath(mapID)
-    infoPath = findInfoFile(songPath)
-    infoData = load_json_as_dict(infoPath)
-    return infoData
-def loadMapData(mapID: str, diffNum: int, isuser=True):
-    songPath = findSongPath(mapID, isuser)
-    diffList = findStandardDiffs(songPath)
-    if diffNum in diffList:     # Check if the song is listed in the Info.dat file, otherwise exits programs
-        diffPath = diffNum_to_diffPath(songPath, diffNum)
-        mapData = load_json_as_dict(diffPath)
-        return mapData
-    else:
-        print(f"Map {mapID} Diff {diffNum} doesn't exist locally. Are you sure you have the updated version?")
-        print("Enter to Exit")
-        input()
-        exit()
-def techOperations(mapData, isuser=True):
+
+def techOperations(mapData, bpm, isuser=True):
+
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     bombData = splitMapData(mapData, 2)
@@ -467,36 +543,22 @@ def techOperations(mapData, isuser=True):
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
-    
+    passNum = diffToPass(SwingData, bpm)
     if isuser:
         print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
+        print(f"Calculated pass diff = {passNum}")
     return tech
 
-def techCalculation(mapData, isuser=True):
-    t0 = time.time()
-    try:
-        mapVersion = parse(mapData['version'])
-    except KeyError:
-        try:
-            mapVersion = parse(mapData['_version'])
-        except KeyError:
-            try:
-                mapData['_notes']
-                mapVersion = parse('2.0.0')
-            except KeyError:
-                mapData['colorNotes']
-                mapVersion = parse('3.0.0')
 
-    if mapVersion < parse('3.0.0'):     # Try to figure out if the map is the V2 or V3 format
-        maptype = 2
-        mapData = V2_to_V3(mapData)     # Convert to V3
-    else:
-        maptype = 3
-    tech = techOperations(mapData, isuser)
+
+def mapCalculation(mapData, bpm, isuser=True):
+    t0 = time.time()
+    newMapData = mapPrep(mapData)
+    data = {'tech': techOperations(newMapData, bpm, isuser)}
     t1 = time.time()
     if isuser:
         print(f'Execution Time = {t1-t0}')
-    return tech
+    return data
     
 
     
@@ -506,6 +568,7 @@ if __name__ == "__main__":
     mapKey = input()
     mapKey = mapKey.replace("!bsr ", "")
     infoData = loadInfoData(mapKey)
+    bpm = infoData['_beatsPerMinute']
     availableDiffs = findStandardDiffs(findSongPath(mapKey))
     if len(availableDiffs) > 1:
         print(f'Choose Diff num: {availableDiffs}')
@@ -514,6 +577,6 @@ if __name__ == "__main__":
         diffNum = availableDiffs[0]
         print(f'autoloading {diffNum}')
     mapData = loadMapData(mapKey, diffNum)
-    techCalculation(mapData)
+    mapCalculation(mapData, bpm)
     print("Done")
     input()

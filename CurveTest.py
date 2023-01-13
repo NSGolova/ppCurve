@@ -57,7 +57,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     finally:
                         if retest and cacheVNum != versionNum:
                             mapData = tech_calc.loadMapData(key, diffNum, False)
-                            AiJSON['tech'] = max(tech_calc.techCalculation(mapData, False) + 0.75, 1)
+                            AiJSON['tech'] = max(tech_calc.mapCalculation(mapData, False) + 0.75, 1)
                             AiJSON['versionNum'] = versionNum
                             try:
                                 os.mkdir(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}")
@@ -77,7 +77,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     else:
                         AiJSON = json.loads(result.text)
                     mapData = tech_calc.loadMapData(key, diffNum, False)
-                    AiJSON['tech'] = max(tech_calc.techCalculation(mapData, False) + 0.75, 1)
+                    AiJSON['tech'] = max(tech_calc.mapCalculation(mapData, False) + 0.75, 1)
                     try:
                         os.mkdir(f"_AIcache/{playerJSON['data'][i]['leaderboard']['song']['hash'].upper()}")
                     except:
