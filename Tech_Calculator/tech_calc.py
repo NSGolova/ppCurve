@@ -437,7 +437,9 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         data[-1]['difficulty'] = difficulty
         difficultyIndex.append(difficulty)
     if isuser:
-        print(f"average {hand} hand speed {average([temp['swingSpeedAve'] for temp in data])}")
+        peakSS = [temp['swingSpeedAve'] for temp in data]
+        peakSS.sort(reverse=True)
+        print(f"peak {hand} hand speed {average(peakSS[:min(smoothing * 8, len(peakSS))])}")
         print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
     difficultyIndex.sort(reverse=True)      #Sort list by most difficult
     return average(difficultyIndex[:min(smoothing * 8, len(difficultyIndex))])          # Use the top 8 swings averaged as the return
