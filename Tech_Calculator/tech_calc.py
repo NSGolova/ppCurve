@@ -411,7 +411,7 @@ def staminaCalc(swingData: list):
 
 
     return staminaList
-def diffToPass(swingData, bpm):
+def diffToPass(swingData, bpm, hand):
     bps = bpm / 60
     SSSpeed = 0         #Sum of Swing Speed
     qSS = deque()       #List of swing speed
@@ -437,8 +437,8 @@ def diffToPass(swingData, bpm):
         difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667) * 1.5
         data[-1]['difficulty'] = difficulty
         difficultyIndex.append(difficulty)
-    print(f"average speege {average([temp['swingSpeedAve'] for temp in data])}")
-    print(f"average sdress {average([temp['stressAve'] for temp in data])}")
+    print(f"average {hand} hand speed {average([temp['swingSpeedAve'] for temp in data])}")
+    print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
     difficultyIndex.sort(reverse=True)      #Sort list by most difficult
     return average(difficultyIndex[:min(smoothing * 8, len(difficultyIndex))])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
@@ -550,7 +550,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
-    passNum = max(diffToPass(LeftSwingData, bpm), diffToPass(RightSwingData, bpm))
+    passNum = max(diffToPass(LeftSwingData, bpm, 'left'), diffToPass(RightSwingData, bpm, 'right'))
 
     if verbose:
         returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum}
