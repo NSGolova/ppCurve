@@ -278,8 +278,10 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                         break
                 
                 cBlockA = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
-                if i > 1:
+                if len(swingData) > 1:
                     guideAngle = (swingData[-2]['angle'] - 180) % 360           # Use the opposite swing angle as a base starting point
+                else:
+                    guideAngle = 270        # First swing? use downward swing as a base starting guide
                 for f in range(1, len(mapSplitData)):       # Checker that will try to find a better guiding block (arrow block) for the slider angle prediction.
                     blockIndex = i - f
                     if mapSplitData[blockIndex]['b'] < pBlockB:     # Limits check to a little after the first slider block in the group
