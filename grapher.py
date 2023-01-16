@@ -17,7 +17,7 @@ oldPpPair = []
 for i, score in enumerate(PPJSON):
     try:
         starsPair.append(PPJSON[i]['newStar'])
-        newPpPair.append(PPJSON[i]['newPP'])
+        newPpPair.append(PPJSON[i]['AIpp'])
         oldPpPair.append(PPJSON[i]['oldPP'])
     except:
         print("done")

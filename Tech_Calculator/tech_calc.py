@@ -348,7 +348,8 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     return average(difficultyIndex[:min(smoothing * 8, len(difficultyIndex))])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
-        return swingData
+        returnDict = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
+        return swingData, returnDict
     swingData[0]['pathStrain'] = 0  # First Note cannot really have any path strain
     testData = []
     for i in range(1, len(swingData)):

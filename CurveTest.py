@@ -65,16 +65,16 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
                 bpm = infoData['_beatsPerMinute']
                 AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
                 AiJSON['versionNum'] = versionNum
-                result = s.get(
-                    f"https://bs-replays-ai.azurewebsites.net/json/{hash}/{diffNum}/time-scale/{speed}")
-                if result.text == 'Not found':
-                    AiJSON['AIstats'] = {}
-                    AiJSON['AIstats']['balanced'] = 0
-                    AiJSON['AIstats']['expected_acc'] = 0
-                    AiJSON['AIstats']['passing_difficulty'] = 0
-                    # AiJSON['expected_acc'] = 1
-                else:
-                    AiJSON['AIstats'] = json.loads(result.text)
+                # result = s.get(
+                #     f"https://bs-replays-ai.azurewebsites.net/json/{hash}/{diffNum}/time-scale/{speed}")
+                # if result.text == 'Not found':
+                #     AiJSON['AIstats'] = {}
+                #     AiJSON['AIstats']['balanced'] = 0
+                #     AiJSON['AIstats']['expected_acc'] = 0
+                #     AiJSON['AIstats']['passing_difficulty'] = 0
+                #     # AiJSON['expected_acc'] = 1
+                # else:
+                #     AiJSON['AIstats'] = json.loads(result.text)
                 try:
                     os.mkdir(f"_AIcache/{hash}")
                 except:
