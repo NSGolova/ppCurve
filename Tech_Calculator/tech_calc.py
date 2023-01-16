@@ -56,32 +56,6 @@ def bezier_curve(points, nTimes=1000):   # For later
     yvals = np.dot(yPoints, polynomial_array)
 
     return list(xvals), list(yvals)
-def V2_to_V3(V2mapData: dict):    # Convert V2 JSON to V3
-    newMapData = {'colorNotes':[], 'bombNotes':[], 'obstacles':[]}  # I have to initialize this before hand or python gets grumpy
-    for i in range(0, len(V2mapData['_notes'])):
-        if V2mapData['_notes'][i]['_type'] in [0, 1]:   # In V2, Bombs and Notes were stored in the same _type key. The "if" just separates them
-            newMapData['colorNotes'].append({'b': V2mapData['_notes'][i]['_time']})     # Append to make a new entry into the list to store the dictionary
-            newMapData['colorNotes'][-1]['x'] = V2mapData['_notes'][i]['_lineIndex']
-            newMapData['colorNotes'][-1]['y'] = V2mapData['_notes'][i]['_lineLayer']
-            newMapData['colorNotes'][-1]['a'] = 0                                       # Angle offset didn't exist in V2. will always be 0
-            newMapData['colorNotes'][-1]['c'] = V2mapData['_notes'][i]['_type']
-            newMapData['colorNotes'][-1]['d'] = V2mapData['_notes'][i]['_cutDirection']
-        elif V2mapData['_notes'][i]['_type'] == 3:      # Bombs
-            newMapData['bombNotes'].append({'b': V2mapData['_notes'][i]['_time']})
-            newMapData['bombNotes'][-1]['x'] = V2mapData['_notes'][i]['_lineIndex']
-            newMapData['bombNotes'][-1]['y'] = V2mapData['_notes'][i]['_lineLayer']
-    for i in range (0, len(V2mapData['_obstacles'])):
-        newMapData['obstacles'].append({'b': V2mapData['_obstacles'][i]['_time']}) 
-        newMapData['obstacles'][-1]['x'] = V2mapData['_obstacles'][i]['_lineIndex']
-        if V2mapData['_obstacles'][i]['_type']:  # V2 wall type defines crouch or full walls
-            newMapData['obstacles'][-1]['y'] = 2
-            newMapData['obstacles'][-1]['h'] = 3
-        else:
-            newMapData['obstacles'][-1]['y'] = 0
-            newMapData['obstacles'][-1]['h'] = 5
-        newMapData['obstacles'][-1]['d'] = V2mapData['_obstacles'][i]['_duration']
-        newMapData['obstacles'][-1]['w'] = V2mapData['_obstacles'][i]['_width']
-    return newMapData
 def mapPrep(mapData):
     try:
         mapVersion = parse(mapData['version'])
@@ -99,13 +73,10 @@ def mapPrep(mapData):
                 except KeyError:
                     print("Unknown Map Type. Exiting")
                     exit()
-
     if mapVersion < parse('3.0.0'):     # Try to figure out if the map is the V2 or V3 format
-        maptype = 2
-        newMapData = V2_to_V3(mapData)     # Convert to V3
+        newMapData = setup.V2_to_V3(mapData)     # Convert to V3
     else:
         newMapData = mapData
-        maptype = 3
     return newMapData
 def splitMapData(mapData: dict, leftOrRight: int):    # False or 0 = Left, True or 1 = Right, 2 = Bombs
     if leftOrRight == 0:
@@ -323,8 +294,8 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     difficultyIndex = []
     data = []
     for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
-        xDist = swingData[i]['entryPos'][0] - swingData[i-1]['exitPos'][0]
-        yDist = swingData[i]['entryPos'][1] - swingData[i-1]['exitPos'][1]
+        xDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
+        yDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
         data.append({'preDistance': math.sqrt((xDist**2) + (yDist**2))})
         if i > smoothing:       # Start removing old swings based on smoothing amount
             SSSpeed -= qSS.popleft()
@@ -336,16 +307,17 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         qST.append(swingData[i]['angleStrain'] + swingData[i]['pathStrain'])
         SSStress += qST[-1]
         data[-1]['stressAve'] = SSStress / smoothing
-        difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667) * 1.5
+        difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667)
+        #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
         data[-1]['difficulty'] = difficulty
         difficultyIndex.append(difficulty)
     if isuser:
         peakSS = [temp['swingSpeedAve'] for temp in data]
         peakSS.sort(reverse=True)
-        print(f"peak {hand} hand speed {average(peakSS[:min(smoothing * 8, len(peakSS))])}")
+        print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
         print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
     difficultyIndex.sort(reverse=True)      #Sort list by most difficult
-    return average(difficultyIndex[:min(smoothing * 8, len(difficultyIndex))])          # Use the top 8 swings averaged as the return
+    return average(difficultyIndex[:int(len(difficultyIndex) / 16)])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
         returnDict = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}

@@ -137,8 +137,8 @@ def findInfoFile(songPath: str):
             return f"{songPath}/{files[f]}"
     print("Info not found")
     return False 
-def loadInfoData(mapID: str):
-    songPath = findSongPath(mapID)
+def loadInfoData(mapID: str, isuser=True):
+    songPath = findSongPath(mapID, isuser)
     infoPath = findInfoFile(songPath)
     infoData = load_json_as_dict(infoPath)
     return infoData
@@ -155,3 +155,32 @@ def loadMapData(mapID: str, diffNum: int, isuser=True):
             print("Enter to Exit")
             input()
             exit()
+def V2_to_V3(V2mapData: dict):    # Convert V2 JSON to V3
+    newMapData = {'colorNotes':[], 'bombNotes':[], 'obstacles':[]}  # I have to initialize this before hand or python gets grumpy
+    for i in range(0, len(V2mapData['_notes'])):
+        if V2mapData['_notes'][i]['_type'] in [0, 1]:   # In V2, Bombs and Notes were stored in the same _type key. The "if" just separates them
+            newMapData['colorNotes'].append({'b': V2mapData['_notes'][i]['_time']})     # Append to make a new entry into the list to store the dictionary
+            newMapData['colorNotes'][-1]['x'] = V2mapData['_notes'][i]['_lineIndex']
+            newMapData['colorNotes'][-1]['y'] = V2mapData['_notes'][i]['_lineLayer']
+            newMapData['colorNotes'][-1]['a'] = 0                                       # Angle offset didn't exist in V2. will always be 0
+            newMapData['colorNotes'][-1]['c'] = V2mapData['_notes'][i]['_type']
+            newMapData['colorNotes'][-1]['d'] = V2mapData['_notes'][i]['_cutDirection']
+        elif V2mapData['_notes'][i]['_type'] == 3:      # Bombs
+            newMapData['bombNotes'].append({'b': V2mapData['_notes'][i]['_time']})
+            newMapData['bombNotes'][-1]['x'] = V2mapData['_notes'][i]['_lineIndex']
+            newMapData['bombNotes'][-1]['y'] = V2mapData['_notes'][i]['_lineLayer']
+    for i in range (0, len(V2mapData['_obstacles'])):
+        newMapData['obstacles'].append({'b': V2mapData['_obstacles'][i]['_time']}) 
+        newMapData['obstacles'][-1]['x'] = V2mapData['_obstacles'][i]['_lineIndex']
+        if V2mapData['_obstacles'][i]['_type']:  # V2 wall type defines crouch or full walls
+            newMapData['obstacles'][-1]['y'] = 2
+            newMapData['obstacles'][-1]['h'] = 3
+        else:
+            newMapData['obstacles'][-1]['y'] = 0
+            newMapData['obstacles'][-1]['h'] = 5
+        newMapData['obstacles'][-1]['d'] = V2mapData['_obstacles'][i]['_duration']
+        newMapData['obstacles'][-1]['w'] = V2mapData['_obstacles'][i]['_width']
+    return newMapData
+
+
+
