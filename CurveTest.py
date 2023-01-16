@@ -4,6 +4,7 @@ import numpy as m
 import os
 import Tech_Calculator.tech_calc as tech_calc
 import Tech_Calculator._BackendFiles.setup as setup
+import math
 
 playerTestList = [2769016623220259,76561198059961776,76561198072855418,76561198075923914,76561198255595858,76561198404774259, 
     76561198225048252, 76561198110147969, 76561198081152434, 76561198204808809, 76561198072431907, 76561198989311828, 76561198960449289, 
@@ -29,7 +30,7 @@ def getKey(JSON):
     key = JSON['leaderboard']['song']['id']
     key = key.replace('x', '')
     return key
-def curveMulti(acc):
+def curveAccMulti(acc):
     pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
     [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
     [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
@@ -44,6 +45,23 @@ def curveMulti(acc):
     middle_dis = (acc - pointList[i-1][0]) / (pointList[i][0] - pointList[i-1][0])
 
     return pointList[i-1][1] + middle_dis * (pointList[i][1] - pointList[i-1][1])
+def curveReverseAccMulti(multi):
+    pointList = [[7, 1], [5.8, 0.999], [4.7, 0.9975], [3.76, 0.995], [3.17, 0.9925], [2.73, 0.99], 
+    [2.38, 0.9875], [2.1, 0.985], [1.88, 0.9825], [1.71, 0.98], [1.57, 0.9775], [1.45, 0.975], 
+    [1.37, 0.9725], [1.31, 0.97], [1.2, 0.965], [1.11, 0.96], [1.045, 0.955], [1, 0.95], [0.94, 0.94], 
+    [0.885, 0.93], [0.835, 0.92], [0.79, 0.91], [0.75, 0.9], [0.655, 0.875], [0.57, 0.85], [0.51, 0.825], 
+    [0.47, 0.8], [0.4, 0.75], [0.34, 0.7], [0.29, 0.65], [0.25, 0.6], [0.0, 0.0]]
+    for i in range(0, len(pointList)):
+        if pointList[i][0] <= multi:
+            break
+
+    if i == 0:
+        i = 1
+
+    middle_dis = (multi - pointList[i-1][0]) / (pointList[i][0] - pointList[i-1][0])
+
+    return pointList[i-1][1] + middle_dis * (pointList[i][1] - pointList[i-1][1])
+
 def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
     s = requests.Session()
     diffNum = dataJSON['leaderboard']['difficulty']['value']
@@ -137,15 +155,18 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 songStats = load_Song_Stats(playerJSON['data'][i], speed, key, retest, versionNum)
 
                 AIStar = songStats['AIstats']['balanced']
-
+                AIacc = songStats['AIstats']['expected_acc']
                 playerACC = playerJSON['data'][i]['accuracy']
                 # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
                 tech = songStats['lackStats']['tech']
 
-                AIaccPP = curveMulti(songStats['AIstats']['expected_acc']) * songStats['AIstats']['balanced'] * 30
-                AIpassPP = songStats['AIstats']['balanced'] * 20
-
+                AIaccPP = curveAccMulti(AIacc) * AIStar * 30
+                AIpassPP = AIStar * 20
                 AIpp = (AIpassPP + AIaccPP)
+                
+                AI600Star = AIStar * 600 / AIpp * -(math.e**(-AIStar) + 1)
+
+
 
                 
                 newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
@@ -157,6 +178,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 newStats[i]['acc'] = playerACC
                 newStats[i]['tech'] = tech
                 newStats[i]['AIpp'] = AIpp
+                newStats[i]['AI600Star'] = AI600Star
 
 
     newStats = sorted(newStats, key=lambda x: x.get('newPP', 0), reverse=True)
