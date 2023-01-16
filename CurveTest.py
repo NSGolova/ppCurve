@@ -12,7 +12,7 @@ playerTestList = [2769016623220259,76561198059961776,76561198072855418,765611980
 
 # playerTestList = [76561198285246326, 76561198802040781]
 
-def searchDiffNum(diffNum, diffList):
+def searchDiffIndex(diffNum, diffList):
     for f in range(0, len(diffList)):
         if diffList[f]['value'] == diffNum:
             return f
@@ -26,9 +26,92 @@ def convertSpeed(listOfMods):
         speed = 0.85
     return speed
 def getKey(JSON):
-    key = JSON['data'][i]['leaderboard']['song']['id']
+    key = JSON['leaderboard']['song']['id']
     key = key.replace('x', '')
     return key
+def curveMulti(acc):
+    pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
+    [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
+    [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
+    [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
+    for i in range(0, len(pointList)):
+        if pointList[i][0] <= acc:
+            break
+    
+    if i == 0:
+        i = 1
+    
+    middle_dis = (acc - pointList[i-1][0]) / (pointList[i][0] - pointList[i-1][0])
+
+    return pointList[i-1][1] + middle_dis * (pointList[i][1] - pointList[i-1][1])
+def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
+    s = requests.Session()
+    diffNum = dataJSON['leaderboard']['difficulty']['value']
+    diffIndex = searchDiffIndex(diffNum, dataJSON['leaderboard']['song']['difficulties'])
+    hash = dataJSON['leaderboard']['song']['hash'].upper()
+    AiJSON = {}
+    try:
+        with open(f"_AIcache/{hash}/{diffNum} {speed}.json", encoding='ISO-8859-1') as score_json:
+            AiJSON = json.load(score_json)
+        print("Cache Hit")
+        try:
+            cacheVNum = AiJSON['versionNum']
+        except:
+            cacheVNum = -1
+        finally:
+            if retest and cacheVNum != versionNum:
+                infoData = setup.loadInfoData(key)
+                mapData = setup.loadMapData(key, diffNum, False)
+                bpm = infoData['_beatsPerMinute']
+                AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
+                AiJSON['versionNum'] = versionNum
+                result = s.get(
+                    f"https://bs-replays-ai.azurewebsites.net/json/{hash}/{diffNum}/time-scale/{speed}")
+                if result.text == 'Not found':
+                    AiJSON['AIstats'] = {}
+                    AiJSON['AIstats']['balanced'] = 0
+                    AiJSON['AIstats']['expected_acc'] = 0
+                    AiJSON['AIstats']['passing_difficulty'] = 0
+                    # AiJSON['expected_acc'] = 1
+                else:
+                    AiJSON['AIstats'] = json.loads(result.text)
+                try:
+                    os.mkdir(f"_AIcache/{hash}")
+                except:
+                    print("Existing Folder")
+                with open(f"_AIcache/{hash}/{diffNum} {speed}.json", 'w') as score_json:
+                    json.dump(AiJSON, score_json, indent=4)
+
+    except:
+        print("Requesting from AI and Calculator")
+        result = s.get(
+            f"https://bs-replays-ai.azurewebsites.net/json/{hash}/{diffNum}/time-scale/{speed}")
+        if result.text == 'Not found':
+            newStar = dataJSON['leaderboard']['song']['difficulties'][diffIndex]['stars']
+            AiJSON['AIstats'] = {}
+            AiJSON['AIstats']['balanced'] = 0
+            AiJSON['AIstats']['expected_acc'] = 0
+            AiJSON['AIstats']['passing_difficulty'] = 0
+            # AiJSON['expected_acc'] = 1
+        else:
+            AiJSON['AIstats'] = json.loads(result.text)
+        infoData = setup.loadInfoData(key)
+        mapData = setup.loadMapData(key, diffNum, False)
+        bpm = infoData['_beatsPerMinute']
+        if mapData != None:
+            AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
+        else:
+            AiJSON['lackStats'] = {'tech': 0, 'passing_difficulty': 0}
+        try:
+            os.mkdir(f"_AIcache/{hash}")
+        except:
+            print("Existing Folder")
+        with open(f"_AIcache/{hash}/{diffNum} {speed}.json", 'w') as score_json:
+            json.dump(AiJSON, score_json, indent=4)
+    
+    return AiJSON
+
+
 
 def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
     s = requests.Session()
@@ -47,21 +130,22 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
         newStats.append({})
         if playerJSON['data'][i]['pp'] != 0:
             diffNum = playerJSON['data'][i]['leaderboard']['difficulty']['value']
-            diffIndex = searchDiffNum(diffNum, playerJSON['data'][i]['leaderboard']['song']['difficulties'])
-            key = getKey(playerJSON)
+            diffIndex = searchDiffIndex(diffNum, playerJSON['data'][i]['leaderboard']['song']['difficulties'])
+            key = getKey(playerJSON['data'][i])
             if playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['status'] == 3:
                 speed = convertSpeed(playerJSON['data'][i]['modifiers'].split(','))
-                songStats = setup.load_Song_Stats(playerJSON['data'][i], speed, key, retest, versionNum)
+                songStats = load_Song_Stats(playerJSON['data'][i], speed, key, retest, versionNum)
 
                 AIStar = songStats['AIstats']['balanced']
 
                 playerACC = playerJSON['data'][i]['accuracy']
                 # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
                 tech = songStats['lackStats']['tech']
-                
 
-                
-                AIpp = (passPP + accPP)
+                AIaccPP = curveMulti(songStats['AIstats']['expected_acc']) * songStats['AIstats']['balanced'] * 30
+                AIpassPP = songStats['AIstats']['balanced'] * 20
+
+                AIpp = (AIpassPP + AIaccPP)
 
                 
                 newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']

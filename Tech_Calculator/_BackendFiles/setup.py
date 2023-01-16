@@ -1,9 +1,9 @@
 import json
 import os
 import csv
-import tech_calc as tech_calc
-import requests
-import _BackendFiles.MapDownloader
+import sys
+sys.path.insert(0, 'Tech_Calculator/_BackendFiles')
+import MapDownloader
 def load_BSPath():
     try:
         f = open('Tech_Calculator/_BackendFiles/bs_path.txt', 'r')
@@ -57,56 +57,6 @@ def searchDiffNum(diffNum, diffList):
     for f in range(0, len(diffList)):
         if diffList[f]['value'] == diffNum:
             return f
-def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
-    s = requests.Session()
-    diffNum = dataJSON['leaderboard']['difficulty']['value']
-    diffIndex = searchDiffNum(diffNum, dataJSON['leaderboard']['song']['difficulties'])
-    hash = dataJSON['leaderboard']['song']['hash'].upper()
-    AiJSON = {}
-    try:
-        with open(f"_AIcache/{hash}/{diffNum} {speed}.json", encoding='ISO-8859-1') as score_json:
-            AiJSON['AIstats'] = json.load(score_json)
-        print("Cache Hit")
-        try:
-            cacheVNum = AiJSON['versionNum']
-        except:
-            cacheVNum = -1
-        finally:
-            if retest and cacheVNum != versionNum:
-                infoData = tech_calc.loadInfoData(key)
-                mapData = tech_calc.loadMapData(key, diffNum, False)
-                bpm = infoData['_beatsPerMinute']
-                AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
-                AiJSON['versionNum'] = versionNum
-                try:
-                    os.mkdir(f"_AIcache/{hash}")
-                except:
-                    print("Existing Folder")
-                with open(f"_AIcache/{hash}/{diffNum} {speed}.json", 'w') as score_json:
-                    json.dump(AiJSON, score_json, indent=4)
-
-    except:
-        print("Requesting from AI and Calculator")
-        result = s.get(
-            f"https://bs-replays-ai.azurewebsites.net/json/{hash}/{diffNum}/time-scale/{speed}")
-        if result.text == 'Not found':
-            newStar = dataJSON['leaderboard']['song']['difficulties'][diffIndex]['stars']
-            AiJSON['AIstats']['balanced'] = newStar
-            # AiJSON['expected_acc'] = 1
-        else:
-            AiJSON['AIstats'] = json.loads(result.text)
-        infoData = tech_calc.loadInfoData(key)
-        mapData = tech_calc.loadMapData(key, diffNum, False)
-        bpm = infoData['_beatsPerMinute']
-        AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
-        try:
-            os.mkdir(f"_AIcache/{hash}")
-        except:
-            print("Existing Folder")
-        with open(f"_AIcache/{hash}/{diffNum} {speed}.json", 'w') as score_json:
-            json.dump(AiJSON, score_json, indent=4)
-    
-    return AiJSON
 def findSongPath(song_id: str, isuser=True): # Returns the song folder path by searching the custom songs folder
     if isuser:
         bsPath = f"{load_BSPath()}Beat Saber_Data\CustomLevels/"
@@ -201,6 +151,7 @@ def loadMapData(mapID: str, diffNum: int, isuser=True):
         return mapData
     else:
         print(f"Map {mapID} Diff {diffNum} doesn't exist locally. Are you sure you have the updated version?")
-        print("Enter to Exit")
-        input()
-        exit()
+        if isuser:
+            print("Enter to Exit")
+            input()
+            exit()
