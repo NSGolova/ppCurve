@@ -420,8 +420,8 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     difficultyIndex = []
     data = []
     for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
-        xDist = swingData[i]['entryPos'][0] - swingData[i-1]['exitPos'][0]
-        yDist = swingData[i]['entryPos'][1] - swingData[i-1]['exitPos'][1]
+        xDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
+        yDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
         data.append({'preDistance': math.sqrt((xDist**2) + (yDist**2))})
         if i > smoothing:       # Start removing old swings based on smoothing amount
             SSSpeed -= qSS.popleft()
@@ -433,16 +433,17 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         qST.append(swingData[i]['angleStrain'] + swingData[i]['pathStrain'])
         SSStress += qST[-1]
         data[-1]['stressAve'] = SSStress / smoothing
-        difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667) * 1.5
+        difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667)
+        #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
         data[-1]['difficulty'] = difficulty
         difficultyIndex.append(difficulty)
     if isuser:
         peakSS = [temp['swingSpeedAve'] for temp in data]
         peakSS.sort(reverse=True)
-        print(f"peak {hand} hand speed {average(peakSS[:min(smoothing * 8, len(peakSS))])}")
+        print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
         print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
     difficultyIndex.sort(reverse=True)      #Sort list by most difficult
-    return average(difficultyIndex[:min(smoothing * 8, len(difficultyIndex))])          # Use the top 8 swings averaged as the return
+    return average(difficultyIndex[:int(len(difficultyIndex) / 16)])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
         return swingData
