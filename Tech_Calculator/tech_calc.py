@@ -3,7 +3,6 @@ import json
 import math
 import sys
 sys.path.insert(0, 'Tech_Calculator')
-import _BackendFiles.MapDownloader as MapDownloader
 import _BackendFiles.setup as setup
 from packaging.version import parse
 import numpy as np
@@ -20,103 +19,7 @@ right_handed_angle_strain_forehand = 247.5      # Most comfortable angle to aim 
 left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 # 
-def load_json_as_dict(path: str):    # Reads, then loads and returns JSON as a dictionary
-    with open(path, 'rb') as json_dat:
-        dat = json.loads(json_dat.read())   
-        # dat = json.load(json_dat)
-    return dat
-def findSongPath(song_id: str, isuser=True): # Returns the song folder path by searching the custom songs folder
-    if isuser:
-        bsPath = f"{setup.load_BSPath()}Beat Saber_Data\CustomLevels/"
-    else:
-        bsPath = "_songCache/"
-    song_options = os.listdir(bsPath)
-    songFound = False
-    for song in song_options:
-        if song.startswith(song_id+" "):
-            songFolder = song
-            songFound = True
-            break
-    if not songFound:
-        # TODO: download from scoresaber if map missing
-        if isuser:
-            print(song_id + " Not Downloaded or wrong song code!")
-            print("Would you like to download this song? (Y/N)")
-            if(response := input().capitalize() == "Y"):
-                if not (songFolder := MapDownloader.downloadSong(song_id, bsPath)):
-                    print(f"Download of {song_id} failed. Exiting...")
-                    input()
-                    exit()
-            else:
-                exit()
-        else:
-            print(f'Downloading Missing song {song_id}')
-            if not (songFolder := MapDownloader.downloadSong(song_id, bsPath)):
-                print(f"Download of {song_id} failed. Exiting...")
-                input()
-                exit()
-    return f"{bsPath}/{songFolder}"
-def findStandardCharacteristicIndex(infoDat: str, characteristicName: str):
-    for f in range(0, len(infoDat["_difficultyBeatmapSets"])):
-        if infoDat["_difficultyBeatmapSets"][f]['_beatmapCharacteristicName'] == characteristicName:
-            return f
-def findStandardDiffs(songPath: str):    # Returns a list of all avilable song difficulties from the info.dat file by difficulty number
-    infoDat = load_json_as_dict(findInfoFile(songPath)) #Load infoDat file for convience
-    characteristicIndex = findStandardCharacteristicIndex(infoDat, "Standard")  
-    difflist = []
-    for f in range(0, len(infoDat["_difficultyBeatmapSets"][characteristicIndex]["_difficultyBeatmaps"])):
-        difflist.append(infoDat["_difficultyBeatmapSets"][characteristicIndex]["_difficultyBeatmaps"][f]["_difficultyRank"]) #Store all avilable difficulties
-    return difflist
-def diffNum_to_diffPath(songPath: str, diffNum: int):     #Returns the File Path of whichever difficulty under test based on the difficulty Number
-    files = os.listdir(songPath)
-    match diffNum:
-        case 9:
-            fileName = files[findMatchingDiffIndex(files, ['expertplus', 'expertplusstandard'])]
-        case 7:
-            fileName = files[findMatchingDiffIndex(files, ['expert', 'expertstandard'])]
-        case 5:
-            fileName = files[findMatchingDiffIndex(files, ['hard', 'hardstandard'])]
-        case 3:
-            fileName = files[findMatchingDiffIndex(files, ['normal', 'normalstandard'])]
-        case 1:
-            fileName = files[findMatchingDiffIndex(files, ['easy', 'easystandard'])]
-    if fileName == False:
-        return False
-    return f"{songPath}/{fileName}"
-def findMatchingDiffIndex(diff_options: list, diff_Names: list):
-    diff_options = [x.lower() for x in diff_options]    # Make everything lowercase for easier searching
-    for f in range(0, len(diff_options)):   #Find the correct index and therefore file name of the desired difficulty
-        fileSplit = diff_options[f].split('.')  #Split to separate
-        if any(x in fileSplit for x in diff_Names): # Parses through the new list of names, really only needs to check the first thing in the list though. I made this unnecessarly complicated I guess
-            return f
-    print("Diff not found")
-    return False
-def findInfoFile(songPath: str):
-    files = os.listdir(songPath)
-    files_lowercase = [x.lower() for x in files]
-    for f in range(0, len(files)):   #Find the correct index and therefore file name of the desired difficulty
-        fileSplit = files_lowercase[f].split('.')  #Split to separate
-        if any(x in fileSplit for x in ['info']): # List just in case info file changes name for future
-            return f"{songPath}/{files[f]}"
-    print("Info not found")
-    return False 
-def loadInfoData(mapID: str):
-    songPath = findSongPath(mapID)
-    infoPath = findInfoFile(songPath)
-    infoData = load_json_as_dict(infoPath)
-    return infoData
-def loadMapData(mapID: str, diffNum: int, isuser=True):
-    songPath = findSongPath(mapID, isuser)
-    diffList = findStandardDiffs(songPath)
-    if diffNum in diffList:     # Check if the song is listed in the Info.dat file, otherwise exits programs
-        diffPath = diffNum_to_diffPath(songPath, diffNum)
-        mapData = load_json_as_dict(diffPath)
-        return mapData
-    else:
-        print(f"Map {mapID} Diff {diffNum} doesn't exist locally. Are you sure you have the updated version?")
-        print("Enter to Exit")
-        input()
-        exit()
+
 def average(lst):   # Returns the averate of a list of integers
     if len(lst) > 0:
         return sum(lst) / len(lst)
@@ -576,16 +479,16 @@ if __name__ == "__main__":
     print("input map key")
     mapKey = input()
     mapKey = mapKey.replace("!bsr ", "")
-    infoData = loadInfoData(mapKey)
+    infoData = setup.loadInfoData(mapKey)
     bpm = infoData['_beatsPerMinute']
-    availableDiffs = findStandardDiffs(findSongPath(mapKey))
+    availableDiffs = setup.findStandardDiffs(setup.findSongPath(mapKey))
     if len(availableDiffs) > 1:
         print(f'Choose Diff num: {availableDiffs}')
         diffNum = int(input())
     else:
         diffNum = availableDiffs[0]
         print(f'autoloading {diffNum}')
-    mapData = loadMapData(mapKey, diffNum)
+    mapData = setup.loadMapData(mapKey, diffNum)
     mapCalculation(mapData, bpm, True, True)
     print("Done")
     input()
