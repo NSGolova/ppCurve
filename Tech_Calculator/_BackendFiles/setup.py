@@ -137,8 +137,8 @@ def findInfoFile(songPath: str):
             return f"{songPath}/{files[f]}"
     print("Info not found")
     return False 
-def loadInfoData(mapID: str):
-    songPath = findSongPath(mapID)
+def loadInfoData(mapID: str, isuser=True):
+    songPath = findSongPath(mapID, isuser)
     infoPath = findInfoFile(songPath)
     infoData = load_json_as_dict(infoPath)
     return infoData

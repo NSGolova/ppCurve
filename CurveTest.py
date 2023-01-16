@@ -78,7 +78,7 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
             cacheVNum = -1
         finally:
             if retest and cacheVNum != versionNum:
-                infoData = setup.loadInfoData(key)
+                infoData = setup.loadInfoData(key, False)
                 mapData = setup.loadMapData(key, diffNum, False)
                 bpm = infoData['_beatsPerMinute']
                 AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
@@ -113,7 +113,7 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
             # AiJSON['expected_acc'] = 1
         else:
             AiJSON['AIstats'] = json.loads(result.text)
-        infoData = setup.loadInfoData(key)
+        infoData = setup.loadInfoData(key, False)
         mapData = setup.loadMapData(key, diffNum, False)
         bpm = infoData['_beatsPerMinute']
         if mapData != None:
