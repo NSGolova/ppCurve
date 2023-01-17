@@ -155,18 +155,20 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 songStats = load_Song_Stats(playerJSON['data'][i], speed, key, retest, versionNum)
 
                 AIStar = songStats['AIstats']['balanced']
+                AIPassStar = songStats['AIstats']['passing_difficulty']
                 AIacc = songStats['AIstats']['expected_acc']
                 playerACC = playerJSON['data'][i]['accuracy']
                 # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
                 tech = songStats['lackStats']['tech']
 
                 AIaccPP = curveAccMulti(AIacc) * AIStar * 30
-                AIpassPP = AIStar * 20
+                AIpassPP = AIPassStar * 20
                 AIpp = (AIpassPP + AIaccPP)
                 if AIStar == 0:
                     AI600Star = 0
                 else:
-                    AI600Star = AIStar * 600 / AIpp * ((-(math.e**(-AIStar))) + 1)
+                    AI600AccStar = AIStar * 600 / AIpp * ((-(math.e**(-AIStar))) + 1)
+                    AI600PassStar = AIPassStar * 600 / AIpp * ((-(math.e**(-AIStar))) + 1)
 
 
 
@@ -180,7 +182,8 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 newStats[i]['acc'] = playerACC
                 newStats[i]['tech'] = tech
                 newStats[i]['AIpp'] = AIpp
-                newStats[i]['AI600Star'] = AI600Star
+                newStats[i]['AI600AccStar'] = AI600AccStar
+                newStats[i]['AI600PassStar'] = AI600PassStar
 
 
     newStats = sorted(newStats, key=lambda x: x.get('newPP', 0), reverse=True)
