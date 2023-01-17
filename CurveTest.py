@@ -163,15 +163,17 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 AIaccPP = curveAccMulti(AIacc) * AIStar * 30
                 AIpassPP = AIStar * 20
                 AIpp = (AIpassPP + AIaccPP)
-                
-                AI600Star = AIStar * 600 / AIpp * -(math.e**(-AIStar) + 1)
+                if AIStar == 0:
+                    AI600Star = 0
+                else:
+                    AI600Star = AIStar * 600 / AIpp * ((-(math.e**(-AIStar))) + 1)
 
 
 
                 
                 newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
                 newStats[i]['diff'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['difficultyName']
-                newStats[i]['newStar'] = AIStar
+                newStats[i]['AIStar'] = AIStar
                 newStats[i]['oldStar'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['stars']
                 newStats[i]['Modifiers'] = playerJSON['data'][i]['modifiers']
                 newStats[i]['oldPP'] = playerJSON['data'][i]['pp']
