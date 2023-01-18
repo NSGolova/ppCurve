@@ -300,14 +300,15 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         if i > smoothing:       # Start removing old swings based on smoothing amount
             SSSpeed -= qSS.popleft()
             SSStress -= qST.popleft()
-        qSS.append(swingData[i]['frequency'] * data[-1]['preDistance'] * bps)
+        distanceDiff = 1.5 * data[-1]['preDistance'] / (data[-1]['preDistance'] + 1)
+        qSS.append(swingData[i]['frequency'] * distanceDiff * bps)
         SSSpeed += qSS[-1]
-        data[-1]['swingSpeedAve'] = SSSpeed / smoothing
+        data[-1]['swingSpeedAve'] = SSSpeed / smoothing  
 
         qST.append(swingData[i]['angleStrain'] + swingData[i]['pathStrain'])
         SSStress += qST[-1]
         data[-1]['stressAve'] = SSStress / smoothing
-        difficulty = data[-1]['swingSpeedAve'] * (data[-1]['stressAve'] + 0.6667)
+        difficulty = data[-1]['swingSpeedAve'] * 1.6 * min((1.2**(-data[-1]['swingSpeedAve']) + 0.75), 1)# (2 * data[-1]['stressAve']) * (-1.4**(-data[-1]['swingSpeedAve']) + 1))
         #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
         data[-1]['difficulty'] = difficulty
         difficultyIndex.append(difficulty)

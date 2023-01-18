@@ -31,9 +31,13 @@ def getKey(JSON):
     key = key.replace('x', '')
     return key
 def curveAccMulti(acc):
-    pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
-    [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
-    [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
+    # pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
+    # [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
+    # [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
+    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
+    pointList = [[1,      4],[0.999,  3.4],[0.9975, 2.85],[0.995,  2.38],[0.9925, 2.085],[0.99,   1.865],[0.9875, 1.69],[0.985,  1.55],
+    [0.9825, 1.44],[0.98,   1.355],[0.9775, 1.285],[0.975,  1.225],[0.9725, 1.185],[0.97,   1.155],[0.965,  1.1],[0.96,   1.055],
+    [0.955,  1.0225],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
     [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
     for i in range(0, len(pointList)):
         if pointList[i][0] <= acc:
@@ -43,22 +47,6 @@ def curveAccMulti(acc):
         i = 1
     
     middle_dis = (acc - pointList[i-1][0]) / (pointList[i][0] - pointList[i-1][0])
-
-    return pointList[i-1][1] + middle_dis * (pointList[i][1] - pointList[i-1][1])
-def curveReverseAccMulti(multi):
-    pointList = [[7, 1], [5.8, 0.999], [4.7, 0.9975], [3.76, 0.995], [3.17, 0.9925], [2.73, 0.99], 
-    [2.38, 0.9875], [2.1, 0.985], [1.88, 0.9825], [1.71, 0.98], [1.57, 0.9775], [1.45, 0.975], 
-    [1.37, 0.9725], [1.31, 0.97], [1.2, 0.965], [1.11, 0.96], [1.045, 0.955], [1, 0.95], [0.94, 0.94], 
-    [0.885, 0.93], [0.835, 0.92], [0.79, 0.91], [0.75, 0.9], [0.655, 0.875], [0.57, 0.85], [0.51, 0.825], 
-    [0.47, 0.8], [0.4, 0.75], [0.34, 0.7], [0.29, 0.65], [0.25, 0.6], [0.0, 0.0]]
-    for i in range(0, len(pointList)):
-        if pointList[i][0] <= multi:
-            break
-
-    if i == 0:
-        i = 1
-
-    middle_dis = (multi - pointList[i-1][0]) / (pointList[i][0] - pointList[i-1][0])
 
     return pointList[i-1][1] + middle_dis * (pointList[i][1] - pointList[i-1][1])
 
@@ -80,7 +68,7 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
             if retest and cacheVNum != versionNum:
                 infoData = setup.loadInfoData(key, False)
                 mapData = setup.loadMapData(key, diffNum, False)
-                bpm = infoData['_beatsPerMinute']
+                bpm = infoData['_beatsPerMinute'] * speed
                 AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
                 AiJSON['versionNum'] = versionNum
                 # result = s.get(
@@ -115,7 +103,7 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
             AiJSON['AIstats'] = json.loads(result.text)
         infoData = setup.loadInfoData(key, False)
         mapData = setup.loadMapData(key, diffNum, False)
-        bpm = infoData['_beatsPerMinute']
+        bpm = infoData['_beatsPerMinute'] * speed
         if mapData != None:
             AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
         else:
@@ -159,13 +147,14 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
                 passRating = songStats['lackStats']['passing_difficulty']
                 tech = songStats['lackStats']['balanced_tech']
+                
+                passPP = passRating * 25
 
-                AIaccPP = curveAccMulti(AIacc + (1 - AIacc) * tech / 4) * passRating * 30
-                passPP = passRating * 20
+                AIaccPP = curveAccMulti(AIacc + (1 - AIacc) * tech / 3) * 175
                 simulatedPP = passPP + AIaccPP
 
-                balancedAcc = playerACC + (1 - playerACC) * tech / 4
-                playerAccPP = curveAccMulti(balancedAcc) * passRating * 30
+                balancedAcc = playerACC + (1 - playerACC) * tech / 3
+                playerAccPP = curveAccMulti(balancedAcc) * 175
                 playerPP = passPP + playerAccPP
 
                 if simulatedPP > 0:
