@@ -154,52 +154,55 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 speed = convertSpeed(playerJSON['data'][i]['modifiers'].split(','))
                 songStats = load_Song_Stats(playerJSON['data'][i], speed, key, retest, versionNum)
 
-                AIStar = songStats['AIstats']['balanced']
-                AIPassStar = songStats['AIstats']['passing_difficulty']
                 AIacc = songStats['AIstats']['expected_acc']
                 playerACC = playerJSON['data'][i]['accuracy']
                 # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
-                tech = songStats['lackStats']['tech']
+                passRating = songStats['lackStats']['passing_difficulty']
+                tech = songStats['lackStats']['balanced_tech']
 
-                AIaccPP = curveAccMulti(AIacc) * AIStar * 30
-                AIpassPP = AIPassStar * 20
-                AIpp = (AIpassPP + AIaccPP)
-                if AIStar == 0:
-                    AI600Star = 0
+                AIaccPP = curveAccMulti(AIacc + (1 - AIacc) * tech / 4) * passRating * 30
+                passPP = passRating * 20
+                simulatedPP = passPP + AIaccPP
+
+                balancedAcc = playerACC + (1 - playerACC) * tech / 4
+                playerAccPP = curveAccMulti(balancedAcc) * passRating * 30
+                playerPP = passPP + playerAccPP
+
+                if simulatedPP > 0:
+                    Star600PP = passRating * 600 / simulatedPP * ((-(math.e**(-passRating))) + 1)
                 else:
-                    AI600AccStar = AIStar * 600 / AIpp * ((-(math.e**(-AIStar))) + 1)
-                    AI600PassStar = AIPassStar * 600 / AIpp * ((-(math.e**(-AIStar))) + 1)
-
+                    Star600PP = 0
 
 
                 
                 newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
                 newStats[i]['diff'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['difficultyName']
-                newStats[i]['AIStar'] = AIStar
+                newStats[i]['passRating'] = passRating
                 newStats[i]['oldStar'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['stars']
                 newStats[i]['Modifiers'] = playerJSON['data'][i]['modifiers']
-                newStats[i]['oldPP'] = playerJSON['data'][i]['pp']
                 newStats[i]['acc'] = playerACC
+                newStats[i]['balanced_acc'] = balancedAcc
                 newStats[i]['tech'] = tech
-                newStats[i]['AIpp'] = AIpp
-                newStats[i]['AI600AccStar'] = AI600AccStar
-                newStats[i]['AI600PassStar'] = AI600PassStar
+                newStats[i]['oldPP'] = playerJSON['data'][i]['pp']
+                newStats[i]['playerPP'] = playerPP
+                newStats[i]['AIpp'] = simulatedPP
+                newStats[i]['600PassStar'] = Star600PP
 
 
-    newStats = sorted(newStats, key=lambda x: x.get('newPP', 0), reverse=True)
+    newStats = sorted(newStats, key=lambda x: x.get('playerPP', 0), reverse=True)
     playerName = playerName.replace("|", "")
 
     filePath = f'_playerStats/{playerName}'
 
     try:
-        with open(f'{filePath}/dataNewPP.json', 'w') as data_json:
+        with open(f'{filePath}/dataNewPlayerPP.json', 'w') as data_json:
             json.dump(newStats, data_json, indent=4)
     except FileNotFoundError:
         os.mkdir(str(f'{filePath}'))
-        with open(f'{filePath}/dataNewPP.json', 'w') as data_json:
+        with open(f'{filePath}/dataNewPlayerPP.json', 'w') as data_json:
             json.dump(newStats, data_json, indent=4)
     
-    newStats = sorted(newStats, key=lambda x: x.get('newStar', 0), reverse=True)
+    newStats = sorted(newStats, key=lambda x: x.get('passRating', 0), reverse=True)
     with open(f'{filePath}/dataStar.json', 'w') as data_json:
         json.dump(newStats, data_json, indent=4)
 

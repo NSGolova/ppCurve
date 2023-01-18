@@ -430,13 +430,16 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     tech = average(StrainList[int(len(StrainList) * 0.25):])
     passNum = max(diffToPass(LeftSwingData, bpm, 'left', isuser), diffToPass(RightSwingData, bpm, 'right', isuser))
 
+    balanced_tech = tech * (-1.4**(-passNum) + 1)
+
     if verbose:
-        returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum}
+        returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum, 'balanced_tech': balanced_tech}
     else:
-        returnDict = {'tech': tech, 'passing_difficulty': passNum}
+        returnDict = {'balanced_tech': balanced_tech, 'passing_difficulty': passNum}
     if isuser:
         print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
         print(f"Calculated pass diff = {passNum}")
+        print(f"Calculated balanced tech = {balanced_tech}")
     return returnDict
 
 def mapCalculation(mapData, bpm, isuser=True, verbose=True):

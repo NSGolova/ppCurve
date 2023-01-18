@@ -28,7 +28,10 @@ for i, score in enumerate(PPJSON):
         if y2Key.lower() != 'null':
             y2Pair.append(PPJSON[i][f'{y2Key}'])
     except:
-        print("done")
+        pass
+    finally:
+        print(i)
+        
 
 fig, ax = plt.subplots(figsize = (15, 8))
 
@@ -39,8 +42,8 @@ ax.set_xlabel(xKey, fontsize=12)
 ax.set_ylabel(y1Key, fontsize=12)
 
 ax.set_xticks(np.linspace(0,20,21))
-ax.set_yticks(np.linspace(0,20,21))
-#ax.set_yticks(np.linspace(0,1000,21))
+#ax.set_yticks(np.linspace(0,20,21))
+ax.set_yticks(np.linspace(0,1000,21))
 
 ax.plot(xPair, y1Pair, 'o', label = y1Key)
 if y2Key.lower() != 'null':
