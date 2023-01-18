@@ -31,14 +31,14 @@ def getKey(JSON):
     key = key.replace('x', '')
     return key
 def curveAccMulti(acc):
-    # pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
-    # [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
-    # [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
-    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
-    pointList = [[1,      4],[0.999,  3.4],[0.9975, 2.85],[0.995,  2.38],[0.9925, 2.085],[0.99,   1.865],[0.9875, 1.69],[0.985,  1.55],
-    [0.9825, 1.44],[0.98,   1.355],[0.9775, 1.285],[0.975,  1.225],[0.9725, 1.185],[0.97,   1.155],[0.965,  1.1],[0.96,   1.055],
-    [0.955,  1.0225],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
+    pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
+    [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
+    [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
     [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
+    # pointList = [[1,      4],[0.999,  3.4],[0.9975, 2.85],[0.995,  2.38],[0.9925, 2.085],[0.99,   1.865],[0.9875, 1.69],[0.985,  1.55],
+    # [0.9825, 1.44],[0.98,   1.355],[0.9775, 1.285],[0.975,  1.225],[0.9725, 1.185],[0.97,   1.155],[0.965,  1.1],[0.96,   1.055],
+    # [0.955,  1.0225],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
+    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
     for i in range(0, len(pointList)):
         if pointList[i][0] <= acc:
             break
@@ -148,21 +148,21 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 passRating = songStats['lackStats']['passing_difficulty']
                 tech = songStats['lackStats']['balanced_tech']
                 
-                passPP = passRating * 25
+                passPP = passRating * 15
 
-                AIaccPP = curveAccMulti(AIacc + (1 - AIacc) * tech / 3) * 175
-                simulatedPP = passPP + AIaccPP
+                AIaccPP = curveAccMulti(AIacc + (1 - AIacc) * tech / 3) * 50
+                
+                AI600accPP = 600
+                if AIacc != 0:
+                    AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 # * (-math.e**(-passRating-0.05) + 1)
+                else:
+                    AI600Star = 0
 
                 balancedAcc = playerACC + (1 - playerACC) * tech / 3
-                playerAccPP = curveAccMulti(balancedAcc) * 175
+
+                playerAccPP = curveAccMulti(balancedAcc) * AI600Star * 25
+                #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
                 playerPP = passPP + playerAccPP
-
-                if simulatedPP > 0:
-                    Star600PP = passRating * 600 / simulatedPP * ((-(math.e**(-passRating))) + 1)
-                else:
-                    Star600PP = 0
-
-
                 
                 newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
                 newStats[i]['diff'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['difficultyName']
@@ -174,8 +174,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                 newStats[i]['tech'] = tech
                 newStats[i]['oldPP'] = playerJSON['data'][i]['pp']
                 newStats[i]['playerPP'] = playerPP
-                newStats[i]['AIpp'] = simulatedPP
-                newStats[i]['600PassStar'] = Star600PP
+                newStats[i]['600PassStar'] = AI600Star
 
 
     newStats = sorted(newStats, key=lambda x: x.get('playerPP', 0), reverse=True)
@@ -247,7 +246,7 @@ if __name__ == "__main__":
         versionNum = -1
 
     for i in range(0, len(playerTestList)):
-        newPlayerStats(playerTestList[i], 500, retest, versionNum)
+        newPlayerStats(playerTestList[i], 1000, retest, versionNum)
         print(f"Finished {playerTestList[i]}")
     print("done")
     print("Press Enter to Exit")
