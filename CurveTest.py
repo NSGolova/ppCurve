@@ -9,9 +9,9 @@ import math
 playerTestList = [2769016623220259,76561198059961776,76561198072855418,76561198075923914,76561198255595858,76561198404774259, 
     76561198225048252, 76561198110147969, 76561198081152434, 76561198204808809, 76561198072431907, 76561198989311828, 76561198960449289, 
     76561199104169308, 3225556157461414, 76561198410971373, 76561198153101808, 76561197995162898, 2169974796454690, 76561198166289091, 
-    76561198285246326, 76561198802040781]
+    76561198285246326, 76561198802040781, 76561198110018904, 76561198044544317, 2092178757563532]
 
-# playerTestList = [76561198285246326, 76561198802040781]
+#playerTestList = [2092178757563532]
 
 def searchDiffIndex(diffNum, diffList):
     for f in range(0, len(diffList)):
@@ -133,48 +133,49 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
     if retest:
         print("Will recalulate and update tech data")
     for i in range(0, len(playerJSON['data'])):
-        newStats.append({})
         if playerJSON['data'][i]['pp'] != 0:
             diffNum = playerJSON['data'][i]['leaderboard']['difficulty']['value']
             diffIndex = searchDiffIndex(diffNum, playerJSON['data'][i]['leaderboard']['song']['difficulties'])
             key = getKey(playerJSON['data'][i])
             if playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['status'] == 3:
-                speed = convertSpeed(playerJSON['data'][i]['modifiers'].split(','))
-                songStats = load_Song_Stats(playerJSON['data'][i], speed, key, retest, versionNum)
+                if playerJSON['data'][i]['leaderboard']['difficulty']['modeName'] == 'Standard':
+                    speed = convertSpeed(playerJSON['data'][i]['modifiers'].split(','))
+                    songStats = load_Song_Stats(playerJSON['data'][i], speed, key, retest, versionNum)
 
-                AIacc = songStats['AIstats']['expected_acc']
-                playerACC = playerJSON['data'][i]['accuracy']
-                # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
-                passRating = songStats['lackStats']['passing_difficulty']
-                tech = songStats['lackStats']['balanced_tech']
-                
-                passPP = passRating * 15
+                    AIacc = songStats['AIstats']['expected_acc']
+                    playerACC = playerJSON['data'][i]['accuracy']
+                    # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
+                    passRating = songStats['lackStats']['passing_difficulty']
+                    tech = songStats['lackStats']['balanced_tech']
+                    
+                    passPP = passRating * 17.5
 
-                AIaccPP = curveAccMulti(AIacc + (1 - AIacc) * tech / 3) * 50
-                
-                AI600accPP = 600
-                if AIacc != 0:
-                    AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 # * (-math.e**(-passRating-0.05) + 1)
-                else:
-                    AI600Star = 0
+                    AIaccPP = curveAccMulti(AIacc) * 50
+                    
+                    AI600accPP = 600
+                    if AIacc != 0:
+                        AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 # * (-math.e**(-passRating-0.05) + 1)
+                    else:
+                        AI600Star = 0
 
-                balancedAcc = playerACC + (1 - playerACC) * tech / 3
+                    balancedAcc = playerACC
 
-                playerAccPP = curveAccMulti(balancedAcc) * AI600Star * 25
-                #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
-                playerPP = passPP + playerAccPP
-                
-                newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
-                newStats[i]['diff'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['difficultyName']
-                newStats[i]['passRating'] = passRating
-                newStats[i]['oldStar'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['stars']
-                newStats[i]['Modifiers'] = playerJSON['data'][i]['modifiers']
-                newStats[i]['acc'] = playerACC
-                newStats[i]['balanced_acc'] = balancedAcc
-                newStats[i]['tech'] = tech
-                newStats[i]['oldPP'] = playerJSON['data'][i]['pp']
-                newStats[i]['playerPP'] = playerPP
-                newStats[i]['600PassStar'] = AI600Star
+                    playerAccPP = curveAccMulti(balancedAcc) * AI600Star * 30
+                    #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
+                    playerPP = passPP + playerAccPP
+                    
+                    newStats.append({})
+                    newStats[i]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
+                    newStats[i]['diff'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['difficultyName']
+                    newStats[i]['passRating'] = passRating
+                    newStats[i]['oldStar'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['stars']
+                    newStats[i]['Modifiers'] = playerJSON['data'][i]['modifiers']
+                    newStats[i]['acc'] = playerACC
+                    newStats[i]['balanced_acc'] = balancedAcc
+                    newStats[i]['tech'] = tech
+                    newStats[i]['oldPP'] = playerJSON['data'][i]['pp']
+                    newStats[i]['playerPP'] = playerPP
+                    newStats[i]['600PassStar'] = AI600Star
 
 
     newStats = sorted(newStats, key=lambda x: x.get('playerPP', 0), reverse=True)
