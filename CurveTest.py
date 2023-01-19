@@ -150,19 +150,14 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
 
                     AIacc = songStats['AIstats']['expected_acc']
                     playerACC = playerJSON['data'][i]['accuracy']
-                    # tech = max(min(-30 * (AiJSON['expected_acc'] - 1.00333), 2.5), 1)
                     passRating = songStats['lackStats']['passing_difficulty']
-                    tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 17.5
-
-                    AIaccPP = curveAccMulti(AIacc) * 50
-                    
+                    passPP = passRating * 17.5                 
                     AI600accPP = 600
                     if AIacc != 0:
                         AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-math.e**(-passRating-0.5) + 1)
                     else:
-                        AI600Star = 0
+                        AI600Star = (-1.3**(-passRating) + 1) * 8 + 2
 
                     balancedAcc = playerACC
 
@@ -178,7 +173,6 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     newStats[-1]['Modifiers'] = playerJSON['data'][i]['modifiers']
                     newStats[-1]['acc'] = playerACC
                     newStats[-1]['balanced_acc'] = balancedAcc
-                    newStats[-1]['tech'] = tech
                     newStats[-1]['oldPP'] = playerJSON['data'][i]['pp']
                     newStats[-1]['playerPP'] = playerPP
                     newStats[-1]['600PassStar'] = AI600Star
