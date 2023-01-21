@@ -153,7 +153,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     passRating = songStats['lackStats']['passing_difficulty']
                     tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 15                 
+                    passPP = passRating * 14 
                     AI600accPP = 600
                     if AIacc != 0:
                         AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
@@ -161,8 +161,8 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                         AI600Star = (-1.3**(-passRating) + 1) * 8 + 2
 
                     
-                    playerTechPP = 1 / (1 + math.e**(-16 * (playerACC - 0.9))) * tech * 12.5 * AI600Star / max((0.3333 * passRating), 1)
-                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 30
+                    playerTechPP = 1 / (1 + math.e**(-16 * (playerACC - 0.9))) * tech * 10 * AI600Star / max((0.3333 * passRating), 1)
+                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5
                     #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
                     playerPP = passPP + playerAccPP + playerTechPP
                     

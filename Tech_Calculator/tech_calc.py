@@ -113,7 +113,7 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                         cBlockA = pBlockA + 180
             # All Pre-caching Done
             if cBlockB - pBlockB >= 0.03125: # = 1/32 Just a check if notes are unreasonable close, just assume they're apart of the same swing
-                if cBlockB - pBlockB > 0.125: # = 1/8 The upper bound of normal slider precision commonly used
+                if cBlockB - pBlockB > 0.120: # = 1/8 The upper bound of normal slider precision commonly used
                     if cBlockB - pBlockB > 0.5:    # = 1/2 About the limit of whats reasonable to expect from a slider
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
                         swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
@@ -132,7 +132,7 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                 else: # 1/8 Check
                     if mapSplitData[i]['d'] == 8 or abs(cBlockA - pBlockA) < 90: # 90 degree check since 90 degrees is what most would consider the maximum angle for a slider or dot note
-                        sliderTime = 0.125
+                        sliderTime = 0.120
                         isSlider = True
                     else:
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
@@ -145,10 +145,12 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                     blockIndex = i - f              # Index of the previous block to start comparisons with
                     if blockIndex < 0:
                         break      # We Reached the beginning of the map
-                    if (mapSplitData[blockIndex]['b'] - mapSplitData[blockIndex - 1]['b'] > 2 * sliderTime):       # use 2x slider time to account for any "irregularities" / margin of error. We are only comparing pairs of blocks
+                    if (mapSplitData[blockIndex]['b'] - mapSplitData[blockIndex - 1]['b'] > 1.5 * sliderTime):       # use 2x slider time to account for any "irregularities" / margin of error. We are only comparing pairs of blocks
                         pBlockB = mapSplitData[blockIndex]['b']                                             # Essentially finds then caches first block in the slider group
-                        pBlockA = mapSplitData[blockIndex]['a']
+                        pBlockA = cut_direction_index[mapSplitData[blockIndex]['d']] + mapSplitData[blockIndex]['a']
                         pBlockP = [mapSplitData[blockIndex]['x'], mapSplitData[blockIndex]['y']]
+                        break
+                    if(mapSplitData[blockIndex]['d'] != 8):     
                         break
                 
                 cBlockA = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
@@ -398,7 +400,7 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         xHitDist = swingData[i]['entryPos'][0] - swingData[i]['exitPos'][0]
         yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
         data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
-        data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 1) + 1
+        data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 3) + 1
 
         qST.append((swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff'])
         SSStress += qST[-1]
@@ -413,6 +415,7 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         peakSS.sort(reverse=True)
         print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
         print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
+
     difficultyIndex.sort(reverse=True)      #Sort list by most difficult
     return average(difficultyIndex[:int(len(difficultyIndex) / 16)])          # Use the top 8 swings averaged as the return
 def combineAndSortList(array1, array2, key):
