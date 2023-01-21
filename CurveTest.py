@@ -9,7 +9,7 @@ import math
 playerTestList = [2769016623220259,76561198059961776,76561198072855418,76561198075923914,76561198255595858,76561198404774259, 
     76561198225048252, 76561198110147969, 76561198081152434, 76561198204808809, 76561198072431907, 76561198989311828, 76561198960449289, 
     76561199104169308, 3225556157461414, 76561198410971373, 76561198153101808, 76561197995162898, 2169974796454690, 76561198166289091, 
-    76561198285246326, 76561198802040781, 76561198110018904, 76561198044544317, 2092178757563532]
+    76561198285246326, 76561198802040781, 76561198110018904, 76561198044544317, 2092178757563532, 76561198311143750]
 
 #playerTestList = [2092178757563532]
 
@@ -151,19 +151,20 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     AIacc = songStats['AIstats']['expected_acc']
                     playerACC = playerJSON['data'][i]['accuracy']
                     passRating = songStats['lackStats']['passing_difficulty']
+                    tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 17.5                 
+                    passPP = passRating * 15                 
                     AI600accPP = 600
                     if AIacc != 0:
-                        AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-math.e**(-passRating-0.5) + 1)
+                        AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
                     else:
                         AI600Star = (-1.3**(-passRating) + 1) * 8 + 2
 
-                    balancedAcc = playerACC
-
-                    playerAccPP = curveAccMulti(balancedAcc) * AI600Star * 30
+                    
+                    playerTechPP = 1 / (1 + math.e**(-16 * (playerACC - 0.9))) * tech * 12.5 * AI600Star / max((0.3333 * passRating), 1)
+                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 30
                     #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
-                    playerPP = passPP + playerAccPP
+                    playerPP = passPP + playerAccPP + playerTechPP
                     
                     newStats.append({})
                     newStats[-1]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
@@ -172,7 +173,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     newStats[-1]['oldStar'] = playerJSON['data'][i]['leaderboard']['song']['difficulties'][diffIndex]['stars']
                     newStats[-1]['Modifiers'] = playerJSON['data'][i]['modifiers']
                     newStats[-1]['acc'] = playerACC
-                    newStats[-1]['balanced_acc'] = balancedAcc
+                    newStats[-1]['tech'] = tech
                     newStats[-1]['oldPP'] = playerJSON['data'][i]['pp']
                     newStats[-1]['playerPP'] = playerPP
                     newStats[-1]['600PassStar'] = AI600Star

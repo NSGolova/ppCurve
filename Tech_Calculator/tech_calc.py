@@ -3,6 +3,7 @@ import json
 import math
 import sys
 sys.path.insert(0, 'Tech_Calculator')
+sys.path.insert(0, '_BackendFiles')
 import _BackendFiles.setup as setup
 from packaging.version import parse
 import numpy as np
@@ -284,41 +285,6 @@ def staminaCalc(swingData: list):
 
 
     return staminaList
-def diffToPass(swingData, bpm, hand, isuser=True):
-    bps = bpm / 60
-    SSSpeed = 0         #Sum of Swing Speed
-    qSS = deque()       #List of swing speed
-    SSStress = 0             #Sum of swing stress
-    qST = deque()       #List of swing stress
-    smoothing = 8       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
-    difficultyIndex = []
-    data = []
-    for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
-        xDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
-        yDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
-        data.append({'preDistance': math.sqrt((xDist**2) + (yDist**2))})
-        if i > smoothing:       # Start removing old swings based on smoothing amount
-            SSSpeed -= qSS.popleft()
-            SSStress -= qST.popleft()
-        distanceDiff = 1.5 * data[-1]['preDistance'] / (data[-1]['preDistance'] + 1)
-        qSS.append(swingData[i]['frequency'] * distanceDiff * bps)
-        SSSpeed += qSS[-1]
-        data[-1]['swingSpeedAve'] = SSSpeed / smoothing  
-
-        qST.append(swingData[i]['angleStrain'] + swingData[i]['pathStrain'])
-        SSStress += qST[-1]
-        data[-1]['stressAve'] = SSStress / smoothing
-        difficulty = data[-1]['swingSpeedAve'] * 1.6 * min((1.2**(-data[-1]['swingSpeedAve']) + 0.75), 1)# (2 * data[-1]['stressAve']) * (-1.4**(-data[-1]['swingSpeedAve']) + 1))
-        #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
-        data[-1]['difficulty'] = difficulty
-        difficultyIndex.append(difficulty)
-    if isuser:
-        peakSS = [temp['swingSpeedAve'] for temp in data]
-        peakSS.sort(reverse=True)
-        print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
-        print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
-    difficultyIndex.sort(reverse=True)      #Sort list by most difficult
-    return average(difficultyIndex[:int(len(difficultyIndex) / 16)])          # Use the top 8 swings averaged as the return
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
         returnDict = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
@@ -327,12 +293,12 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     testData = []
     for i in range(1, len(swingData)):
         point0 = swingData[i-1]['exitPos']      # Curve Beginning
-        point1x = point0[0] + 0.5 * math.cos(math.radians(swingData[i-1]['angle']))
-        point1y = point0[1] + 0.5 * math.sin(math.radians(swingData[i-1]['angle']))
+        point1x = point0[0] + 1 * math.cos(math.radians(swingData[i-1]['angle']))
+        point1y = point0[1] + 1 * math.sin(math.radians(swingData[i-1]['angle']))
         point1 = [point1x, point1y] #Curve Control Point
         point3 = swingData[i]['entryPos']       # Curve Ending
-        point2x = point3[0] - 0.5 * math.cos(math.radians(swingData[i]['angle']))
-        point2y = point3[1] - 0.5 * math.sin(math.radians(swingData[i]['angle']))
+        point2x = point3[0] - 1 * math.cos(math.radians(swingData[i]['angle']))
+        point2y = point3[1] - 1 * math.sin(math.radians(swingData[i]['angle']))
         point2 = [point2x, point2y]     #Curve Control Point
         points = [point0, point1, point2, point3]
         xvals, yvals = bezier_curve(points, nTimes=25)      #nTimes = the resultion of the bezier curve. Higher = more accurate but slower
@@ -345,10 +311,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
             angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
             if f > 1:
                 angleChangeList.append(180 - abs(abs(angleList[-1] - angleList[-2]) - 180))   # Wacky formula to handle 5 - 355 situations
-        if swingData[i]['reset']:       # If the pattern is a reset, look less far back
-            lookback = 0.80                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
-        else:
-            lookback = 0.333333
+        
         if i > 1:       # Will miss the very first reset if it exists but a sacrafice for speed
             simHandCurPos = swingData[i]['entryPos']
             if(swingData[i]['forehand'] == swingData[i-2]['forehand']):     #Start 2 swings back since it's the most likely
@@ -359,10 +322,17 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
                 simHandPrePos = simHandCurPos
             positionDiff = math.sqrt((simHandCurPos[1] - simHandPrePos[1])**2 + (simHandCurPos[0] - simHandPrePos[0])**2)
             positionComplexity = positionDiff**2
+
+        lengthOfList = len(angleChangeList) * (1 - 0.4)             # 0.2 + (1 - 0.8) = 0.4
+        firstIndex = int(len(angleChangeList)*0.2)
+        lastIndex = int(len(angleChangeList)*0.8)
+        if swingData[i]['reset']:       # If the pattern is a reset, look less far back
+            pathLookback = 0.75                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
         else:
-            positionComplexity = 0
-        curveComplexity = abs((len(angleChangeList) * average(angleChangeList) - 180) / 180)   # The more the angle difference changes from 180, the more complex the path, /180 to normalize between 0 - 1
-        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * lookback):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
+            pathLookback = 0.50
+
+        curveComplexity = abs((lengthOfList * average(angleChangeList[firstIndex:lastIndex]) - 180) / 180)   # The more the angle difference changes from 180, the more complex the path, /180 to normalize between 0 - 1
+        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * pathLookback):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
 
         # print(f"positionComplexity {positionComplexity}")
         # print(f"curveComplexity {curveComplexity}")
@@ -374,7 +344,8 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         # ypoints = [p[1] for p in points]
         # ax.plot(xvals, yvals, label='curve path')
         # ax.plot(xpoints, ypoints, "ro")
-        # ax.plot([xvals[int(len(xvals) * 0.3333)], xvals[int(len(xvals) * 0.6667)]], [yvals[int(len(yvals) * 0.3333)], yvals[int(len(yvals) * 0.6667)]], "ro")
+        # ax.plot(xvals[int(len(xvals) * (1 - pathLookback))], yvals[int(len(yvals) * (1 - pathLookback))], "ro")
+        # ax.plot([xvals[int(len(xvals) * 0.2)], xvals[int(len(xvals) * 0.8)]], [yvals[int(len(yvals) * 0.2)], yvals[int(len(yvals) * 0.8)]], "ro")
         # ax.set_xticks(np.linspace(0,1.333333333,5))
         # ax.set_yticks(np.linspace(0,1,4))
         # #plt.xlim(0,1.3333333)
@@ -402,6 +373,48 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         print(f"Average {hand} curveComplexityStrain {avecurveComplexityStrain}")
         print(f"Average {hand} pathAngleStrain {avepathAngleStrain}")
     return swingData, returnDict
+def diffToPass(swingData, bpm, hand, isuser=True):
+    bps = bpm / 60
+    SSSpeed = 0         #Sum of Swing Speed
+    qSS = deque()       #List of swing speed
+    SSStress = 0             #Sum of swing stress
+    qST = deque()       #List of swing stress
+    smoothing = 8       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
+    difficultyIndex = []
+    data = []
+    for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
+        xPathDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
+        yPathDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
+        data.append({'preDistance': math.sqrt((xPathDist**2) + (yPathDist**2))})
+        if i > smoothing:       # Start removing old swings based on smoothing amount
+            SSSpeed -= qSS.popleft()
+            SSStress -= qST.popleft()
+        distanceDiff = data[-1]['preDistance'] / (data[-1]['preDistance'] + 2) + 1
+        qSS.append(swingData[i]['frequency'] * distanceDiff * bps)
+        SSSpeed += qSS[-1]
+        data[-1]['swingSpeedAve'] = SSSpeed / smoothing
+
+
+        xHitDist = swingData[i]['entryPos'][0] - swingData[i]['exitPos'][0]
+        yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
+        data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
+        data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 1) + 1
+
+        qST.append((swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff'])
+        SSStress += qST[-1]
+        data[-1]['stressAve'] = SSStress / smoothing
+        
+        difficulty = data[-1]['swingSpeedAve'] * (-1.4**(-data[-1]['swingSpeedAve']) + 1) * (data[-1]['stressAve'] / (data[-1]['stressAve'] + 2) + 1) * 0.75
+        #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
+        data[-1]['difficulty'] = difficulty
+        difficultyIndex.append(difficulty)
+    if isuser:
+        peakSS = [temp['swingSpeedAve'] for temp in data]
+        peakSS.sort(reverse=True)
+        print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
+        print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
+    difficultyIndex.sort(reverse=True)      #Sort list by most difficult
+    return average(difficultyIndex[:int(len(difficultyIndex) / 16)])          # Use the top 8 swings averaged as the return
 def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
     combinedArray = sorted(combinedArray, key=lambda x: x[f'{key}'])  # once combined, sort by time
