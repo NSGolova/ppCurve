@@ -1,5 +1,3 @@
-import os
-import json
 import math
 import sys
 sys.path.insert(0, 'Tech_Calculator')
@@ -335,11 +333,14 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         positionComplexity = 0
         angleChangeList = []
         angleList = []
+        distance = 0
         for f in range(1, min(len(xvals), len(yvals))):
             angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
+            distance += math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2)
             if f > 1:
                 angleChangeList.append(180 - abs(abs(angleList[-1] - angleList[-2]) - 180))   # Wacky formula to handle 5 - 355 situations
-        
+        distance -= 0.75
+
         if i > 1:       # Will miss the very first reset if it exists but a sacrafice for speed
             simHandCurPos = swingData[i]['entryPos']
             if(swingData[i]['forehand'] == swingData[i-2]['forehand']):     #Start 2 swings back since it's the most likely
@@ -383,6 +384,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
 
         testData.append({'curveComplexityStrain': curveComplexity, 'pathAngleStrain': pathAngleStrain, 'positionComplexity': positionComplexity})
         swingData[i]['positionComplexity'] = positionComplexity
+        swingData[i]['preDistance'] = distance
         swingData[i]['curveComplexity'] = curveComplexity
         swingData[i]['pathAngleStrain'] = pathAngleStrain
         swingData[i]['pathStrain'] = curveComplexity + pathAngleStrain + positionComplexity
@@ -411,28 +413,29 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     difficultyIndex = []
     data = []
     for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
-        xPathDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
-        yPathDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
-        data.append({'preDistance': math.sqrt((xPathDist**2) + (yPathDist**2))})
+        # xPathDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
+        # yPathDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
+        # data.append({'preDistance': math.sqrt((xPathDist**2) + (yPathDist**2))})
+        # distanceDiff = data[-1]['preDistance'] / (data[-1]['preDistance'] + 3) + 1
+        distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
         if i > smoothing:       # Start removing old swings based on smoothing amount
             SSSpeed -= qSS.popleft()
             SSStress -= qST.popleft()
-        distanceDiff = data[-1]['preDistance'] / (data[-1]['preDistance'] + 2) + 1
         qSS.append(swingData[i]['frequency'] * distanceDiff * bps)
         SSSpeed += qSS[-1]
-        data[-1]['swingSpeedAve'] = SSSpeed / smoothing
-
+        # data[-1]['swingSpeedAve'] = SSSpeed / smoothing
+        data.append({'swingSpeedAve': SSSpeed / smoothing})
 
         xHitDist = swingData[i]['entryPos'][0] - swingData[i]['exitPos'][0]
         yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
         data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
-        data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 3) + 1
+        data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
 
         qST.append((swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff'])
         SSStress += qST[-1]
         data[-1]['stressAve'] = SSStress / smoothing
         
-        difficulty = data[-1]['swingSpeedAve'] * (-1.4**(-data[-1]['swingSpeedAve']) + 1) * (data[-1]['stressAve'] / (data[-1]['stressAve'] + 2) + 1) * 0.75
+        difficulty = data[-1]['swingSpeedAve'] * (-1.4**(-data[-1]['swingSpeedAve']) + 1) * (data[-1]['stressAve'] / (data[-1]['stressAve'] + 2) + 1) * 0.80
         #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
         data[-1]['difficulty'] = difficulty
         difficultyIndex.append(difficulty)
