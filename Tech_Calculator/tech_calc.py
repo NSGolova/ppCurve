@@ -414,48 +414,70 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     return swingData, returnDict
 def diffToPass(swingData, bpm, hand, isuser=True):
     bps = bpm / 60
-    SSSpeed = 0         #Sum of Swing Speed
-    qSS = deque()       #List of swing speed
-    SSStress = 0             #Sum of swing stress
-    qST = deque()       #List of swing stress
-    smoothing = 8       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
+    # SSSpeed = 0         #Sum of Swing Speed
+    # qSS = deque()       #List of swing speed
+    # SSStress = 0             #Sum of swing stress
+    # qST = deque()       #List of swing stress
+    qDIFF = deque()
+    window = 50       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
     difficultyIndex = []
     data = []
-    for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
-        # xPathDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
-        # yPathDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
-        # data.append({'preDistance': math.sqrt((xPathDist**2) + (yPathDist**2))})
-        # distanceDiff = data[-1]['preDistance'] / (data[-1]['preDistance'] + 3) + 1
-        distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
-        if i > smoothing:       # Start removing old swings based on smoothing amount
-            SSSpeed -= qSS.popleft()
-            SSStress -= qST.popleft()
-        qSS.append(swingData[i]['frequency'] * distanceDiff * bps)
-        SSSpeed += qSS[-1]
-        # data[-1]['swingSpeedAve'] = SSSpeed / smoothing
-        data.append({'swingSpeedAve': SSSpeed / smoothing})
+    # for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
+        # # xPathDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
+        # # yPathDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
+        # # data.append({'preDistance': math.sqrt((xPathDist**2) + (yPathDist**2))})
+        # # distanceDiff = data[-1]['preDistance'] / (data[-1]['preDistance'] + 3) + 1
+        # distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
+        # if i > smoothing:       # Start removing old swings based on smoothing amount
+        #     SSSpeed -= qSS.popleft()
+        #     SSStress -= qST.popleft()
+        # qSS.append(swingData[i]['frequency'] * distanceDiff * bps)
+        # SSSpeed += qSS[-1]
+        # # data[-1]['swingSpeedAve'] = SSSpeed / smoothing
+        # data.append({'swingSpeedAve': SSSpeed / smoothing})
 
+        # xHitDist = swingData[i]['entryPos'][0] - swingData[i]['exitPos'][0]
+        # yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
+        # data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
+        # data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
+
+        # qST.append((swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff'])
+        # SSStress += qST[-1]
+        # data[-1]['stressAve'] = SSStress / smoothing
+        
+        # difficulty = data[-1]['swingSpeedAve'] * (-1.4**(-data[-1]['swingSpeedAve']) + 1) * (data[-1]['stressAve'] / (data[-1]['stressAve'] + 2) + 1) * 0.80
+        # #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
+        # data[-1]['difficulty'] = difficulty
+        # difficultyIndex.append(difficulty)
+
+    # if isuser:
+    #     peakSS = [temp['swingSpeedAve'] for temp in data]
+    #     peakSS.sort(reverse=True)
+    #     print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
+    #     print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
+
+    # difficultyIndex.sort(reverse=True)      #Sort list by most difficult
+    # return average(difficultyIndex[:int(len(difficultyIndex) * 0.3)])          # Use the top 8 swings averaged as the return
+
+    for i in range(1, len(swingData)):
+        distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
+        data.append({'swingSpeed': swingData[i]['frequency'] * distanceDiff * bps})
         xHitDist = swingData[i]['entryPos'][0] - swingData[i]['exitPos'][0]
         yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
         data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
         data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
+        data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
+        data[-1]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4**(-data[-1]['swingSpeed']) + 1) * (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
 
-        qST.append((swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff'])
-        SSStress += qST[-1]
-        data[-1]['stressAve'] = SSStress / smoothing
-        
-        difficulty = data[-1]['swingSpeedAve'] * (-1.4**(-data[-1]['swingSpeedAve']) + 1) * (data[-1]['stressAve'] / (data[-1]['stressAve'] + 2) + 1) * 0.80
-        #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
-        data[-1]['difficulty'] = difficulty
-        difficultyIndex.append(difficulty)
-    if isuser:
-        peakSS = [temp['swingSpeedAve'] for temp in data]
-        peakSS.sort(reverse=True)
-        print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
-        print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
+        if i > window:
+            qDIFF.popleft()
+        qDIFF.append(data[-1]['swingDiff'])
+        tempList = sorted(qDIFF, reverse=True)
+        windowDiff = average(tempList[:int(len(tempList) * 15 / window)]) * 0.80        # Top 15 notes out of the window
+        difficultyIndex.append(windowDiff)
 
-    difficultyIndex.sort(reverse=True)      #Sort list by most difficult
-    return average(difficultyIndex[:int(len(difficultyIndex) / 16)])          # Use the top 8 swings averaged as the return
+    return max(difficultyIndex)
+
 def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
     combinedArray = sorted(combinedArray, key=lambda x: x[f'{key}'])  # once combined, sort by time
