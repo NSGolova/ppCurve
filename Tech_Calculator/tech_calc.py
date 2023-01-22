@@ -137,7 +137,7 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                         cBlockA = pBlockA + 180
             # All Pre-caching Done
             if cBlockB - pBlockB >= 0.03125: # = 1/32 Just a check if notes are unreasonable close, just assume they're apart of the same swing
-                if cBlockB - pBlockB > 0.120: # = 1/8 The upper bound of normal slider precision commonly used
+                if cBlockB - pBlockB > 0.125: # = 1/8 The upper bound of normal slider precision commonly used
                     if cBlockB - pBlockB > 0.5:    # = 1/2 About the limit of whats reasonable to expect from a slider
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
                         swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
@@ -155,12 +155,17 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                             else:
                                 swingData.append({'time': cBlockB, 'angle': cBlockA})
                                 swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-                        else:
-                            sliderTime = cBlockB - pBlockB
-                            isSlider = True
+                        else:       # Dot note thats also close? Swing detection gets a little more tricky
+                            if i < len(mapSplitData) - 1:   # Checks if the next memory access is legal
+                                if (cBlockB - pBlockB) - (mapSplitData[i+1]['b'] - cBlockB) < 0.125:    # Checks which swing the dot note is associated with.
+                                    sliderTime = cBlockB - pBlockB
+                                    isSlider = True
+                                else:
+                                    swingData.append({'time': cBlockB, 'angle': cBlockA})
+                                    swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                 else: # 1/8 Check
                     if mapSplitData[i]['d'] == 8 or abs(cBlockA - pBlockA) < 90: # 90 degree check since 90 degrees is what most would consider the maximum angle for a slider or dot note
-                        sliderTime = 0.120
+                        sliderTime = 0.125
                         isSlider = True
                     else:
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
