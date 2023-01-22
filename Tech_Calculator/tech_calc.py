@@ -142,18 +142,22 @@ def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for 
                         swingData.append({'time': cBlockB, 'angle': cBlockA})
                         swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                     else: # 1/2 Check (just to weed out obvious non-sliders) More complicated methods need to be used
-                        if abs(cBlockA - pBlockA) < 112.5:  # 90 + 22.5 JUST IN CASE. not the full 90 + 45 since that would be one hell of a slider or dot note
-                            testAnglefromPosition = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
-                            averageAngleOfBlocks = (cBlockA + pBlockA) / 2
-                            if abs(testAnglefromPosition - averageAngleOfBlocks) <= 56.25:  # = 112.5 / 2 = 56.25
-                                sliderTime = cBlockB - pBlockB
-                                isSlider = True
+                        if mapSplitData[i]['d'] != 8:
+                            if abs(cBlockA - pBlockA) < 112.5:  # 90 + 22.5 JUST IN CASE. not the full 90 + 45 since that would be one hell of a slider or dot note
+                                testAnglefromPosition = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
+                                averageAngleOfBlocks = (cBlockA + pBlockA) / 2
+                                if abs(testAnglefromPosition - averageAngleOfBlocks) <= 56.25:  # = 112.5 / 2 = 56.25
+                                    sliderTime = cBlockB - pBlockB
+                                    isSlider = True
+                                else:
+                                    swingData.append({'time': cBlockB, 'angle': cBlockA})       # Below calculates the entry and exit positions for each swing
+                                    swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                             else:
-                                swingData.append({'time': cBlockB, 'angle': cBlockA})       # Below calculates the entry and exit positions for each swing
+                                swingData.append({'time': cBlockB, 'angle': cBlockA})
                                 swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
                         else:
-                            swingData.append({'time': cBlockB, 'angle': cBlockA})
-                            swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
+                            sliderTime = cBlockB - pBlockB
+                            isSlider = True
                 else: # 1/8 Check
                     if mapSplitData[i]['d'] == 8 or abs(cBlockA - pBlockA) < 90: # 90 degree check since 90 degrees is what most would consider the maximum angle for a slider or dot note
                         sliderTime = 0.120
