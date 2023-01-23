@@ -116,6 +116,7 @@ def calculateBaseEntryExit(cBlockP, cBlockA):
     exit = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
     return entry, exit
 def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for all swings returning swing angles and timestamps
+    mapSplitData = sorted(mapSplitData, key=lambda d: d['b'])
     swingData = []
     for i in range(0, len(mapSplitData)):
         isSlider = False
@@ -419,7 +420,7 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     # SSStress = 0             #Sum of swing stress
     # qST = deque()       #List of swing stress
     qDIFF = deque()
-    window = 50       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
+    WINDOW = 50       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
     difficultyIndex = []
     data = []
     # for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
@@ -469,14 +470,23 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
         data[-1]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4**(-data[-1]['swingSpeed']) + 1) * (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
 
-        if i > window:
+        if i > WINDOW:
             qDIFF.popleft()
         qDIFF.append(data[-1]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
-        windowDiff = average(tempList[:int(len(tempList) * 15 / window)]) * 0.80        # Top 15 notes out of the window
+        windowDiff = average(tempList[:int(len(tempList) * 15 / WINDOW)]) * 0.80        # Top 15 notes out of the window
         difficultyIndex.append(windowDiff)
+    
+    if isuser:
+        peakSS = [temp['swingSpeed'] for temp in data]
+        peakSS.sort(reverse=True)
+        print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
+        print(f"average {hand} hand stress {average([temp['stress'] for temp in data])}")
 
-    return max(difficultyIndex)
+    if len(difficultyIndex) > 0:
+        return max(difficultyIndex)
+    else:
+        return 0
 
 def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
