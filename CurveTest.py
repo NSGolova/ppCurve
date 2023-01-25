@@ -158,11 +158,12 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     if AIacc != 0:
                         AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
                     else:
-                        AI600Star = (-1.3**(-passRating) + 1) * 8 + 2
+                        tinyTech = 0.208 * tech + 1.1284 # https://www.desmos.com/calculator/yaqyyomsp9
+                        AI600Star = (-tinyTech**(-passRating) + 1) * 8 + 2 + 0.1 * tech * passRating
 
                     
-                    playerTechPP = 1 / (1 + math.e**(-16 * (playerACC - 0.9))) * tech * 10 * AI600Star / max((0.3333 * passRating), 1)
-                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5
+                    playerTechPP = 1 / (1 + math.e**(-64 * (playerACC - 0.9))) * tech / (1 + math.e**(-16 * (tech - 0.5))) * 15 * AI600Star / max((0.3333 * passRating), 1)
+                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5 / (1 + math.e**(-8 * (passRating + 0.05)))
                     #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
                     playerPP = passPP + playerAccPP + playerTechPP
                     
@@ -175,6 +176,9 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     newStats[-1]['acc'] = playerACC
                     newStats[-1]['tech'] = tech
                     newStats[-1]['oldPP'] = playerJSON['data'][i]['pp']
+                    newStats[-1]['passPP'] = passPP
+                    newStats[-1]['techPP'] = playerTechPP
+                    newStats[-1]['accPP'] = playerAccPP
                     newStats[-1]['playerPP'] = playerPP
                     newStats[-1]['600PassStar'] = AI600Star
 
