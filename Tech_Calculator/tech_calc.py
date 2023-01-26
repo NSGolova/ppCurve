@@ -285,7 +285,7 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
         testData2 = copy.deepcopy(patternData[p])
         for i in range(0, len(testData1)):  # Build Forehand TestData Build
             if i > 0:
-                if abs(testData1[i]['angle'] - testData1[i-1]['angle']) > 45:     # If angles are too similar, assume reset since a write roll of that degree is crazy
+                if abs(testData1[i]['angle'] - testData1[i-1]['angle']) >= 67.5:     # If angles are too similar, assume reset since a write roll of that degree is crazy
                     testData1[i]['forehand'] = not testData1[i-1]['forehand']
                 else:
                     testData1[i]['forehand'] = testData1[i-1]['forehand']
@@ -293,7 +293,7 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
                 testData1[0]['forehand'] = True
         for i in range(0, len(testData2)):  # Build Banckhand TestData
             if i > 0:
-                if abs(testData2[i]['angle'] - testData2[i-1]['angle']) > 45:     # Again, if angles are too similar, assume reset since a write roll of that degree is crazy
+                if abs(testData2[i]['angle'] - testData2[i-1]['angle']) >= 67.5:     # = 45 + 22.5
                     testData2[i]['forehand'] = not testData2[i-1]['forehand']
                 else:
                     testData2[i]['forehand'] = testData2[i-1]['forehand']
@@ -363,15 +363,22 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
             positionComplexity = positionDiff**2
 
         lengthOfList = len(angleChangeList) * (1 - 0.4)             # 0.2 + (1 - 0.8) = 0.4
-        firstIndex = int(len(angleChangeList)*0.2)
-        lastIndex = int(len(angleChangeList)*0.8)
+
+        
         if swingData[i]['reset']:       # If the pattern is a reset, look less far back
-            pathLookback = 0.75                     # 0.5 angle strain = 0.35 or 65% lookback, 0.1 angle strain = 0.5 or 50% lookback
+            pathLookback = 0.9
+            first = 0.5
+            last = 1
         else:
-            pathLookback = 0.50
+            pathLookback = 0.5
+            first = 0.2
+            last = 0.8
+        pathLookbackIndex = int(len(angleList) * pathLookback)
+        firstIndex = int(len(angleChangeList)* first) - 1
+        lastIndex = int(len(angleChangeList)* last) - 1
 
         curveComplexity = abs((lengthOfList * average(angleChangeList[firstIndex:lastIndex]) - 180) / 180)   # The more the angle difference changes from 180, the more complex the path, /180 to normalize between 0 - 1
-        pathAngleStrain = bezierAngleStrainCalc(angleList[int(len(angleList) * pathLookback):], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
+        pathAngleStrain = bezierAngleStrainCalc(angleList[pathLookbackIndex:], swingData[i]['forehand'], leftOrRight) / len(angleList) * 2
 
         # print(f"positionComplexity {positionComplexity}")
         # print(f"curveComplexity {curveComplexity}")
@@ -382,9 +389,9 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         # xpoints = [p[0] for p in points]
         # ypoints = [p[1] for p in points]
         # ax.plot(xvals, yvals, label='curve path')
-        # ax.plot(xpoints, ypoints, "ro")
-        # ax.plot(xvals[int(len(xvals) * (1 - pathLookback))], yvals[int(len(yvals) * (1 - pathLookback))], "ro")
-        # ax.plot([xvals[int(len(xvals) * 0.2)], xvals[int(len(xvals) * 0.8)]], [yvals[int(len(yvals) * 0.2)], yvals[int(len(yvals) * 0.8)]], "ro")
+        # ax.plot(xpoints, ypoints, "ro", label='Control Points')
+        # ax.plot(xvals[int(len(xvals) * pathLookback)], yvals[int(len(yvals) * pathLookback)], "bo", label='pathAngleStrain Start Point')
+        # ax.plot([xvals[int(len(xvals) * first) - 1], xvals[int(len(xvals) * last) - 1]], [yvals[int(len(yvals) * first) - 1], yvals[int(len(yvals) * last) - 1]], 'go', label='curveComplexity Scope')
         # ax.set_xticks(np.linspace(0,1.333333333,5))
         # ax.set_yticks(np.linspace(0,1,4))
         # #plt.xlim(0,1.3333333)
