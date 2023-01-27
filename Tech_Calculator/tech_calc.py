@@ -323,6 +323,8 @@ def staminaCalc(data: list):
     swingDiffList.sort(reverse=True)
     averageDiff = average(swingDiffList[:int(len(swingDiffList) * 0.5)])
     burstDiff = average(swingDiffList[:min(round(len(swingDiffList) / 8), 1)])
+    if burstDiff == 0:
+        return 0
     staminaRatio = averageDiff / burstDiff
     return 1 / (10 + 4**(-64 * (staminaRatio - 0.875))) + 0.9 + staminaRatio / 20
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
@@ -470,6 +472,8 @@ def diffToPass(swingData, bpm, hand, isuser=True):
 
     # difficultyIndex.sort(reverse=True)      #Sort list by most difficult
     # return average(difficultyIndex[:int(len(difficultyIndex) * 0.3)])          # Use the top 8 swings averaged as the return
+    if len(swingData) == 0:
+        return 0
     swingData[0]['swingDiff'] = 0
     for i in range(1, len(swingData)):
         distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
