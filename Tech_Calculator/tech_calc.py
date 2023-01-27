@@ -19,9 +19,12 @@ left_handed_angle_strain_forehand = 292.5       # 270 + 45 or 292.5
 # 
 # 
 
-def average(lst):   # Returns the averate of a list of integers
+def average(lst, setLen=0):   # Returns the averate of a list of integers
     if len(lst) > 0:
-        return sum(lst) / len(lst)
+        if setLen == 0:
+            return sum(lst) / len(lst)
+        else:
+            return sum(lst) / setLen
     else:
         return 0
 def bernstein_poly(i, n, t):    # For later
@@ -315,12 +318,13 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
         else:
             newPatternData[i]['reset'] = False
     return newPatternData
-def staminaCalc(swingData: list):
-    staminaList: list = []
-    #TODO calculate strain from stamina drain
-
-
-    return staminaList
+def staminaCalc(data: list):
+    swingDiffList = [temp['swingDiff'] for temp in data]
+    swingDiffList.sort(reverse=True)
+    averageDiff = average(swingDiffList[:int(len(swingDiffList) * 0.5)])
+    burstDiff = average(swingDiffList[:min(round(len(swingDiffList) / 8), 1)])
+    staminaRatio = averageDiff / burstDiff
+    return 1 / (10 + 4**(-64 * (staminaRatio - 0.875))) + 0.9 + staminaRatio / 20
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
         returnDict = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
@@ -459,7 +463,7 @@ def diffToPass(swingData, bpm, hand, isuser=True):
 
     # difficultyIndex.sort(reverse=True)      #Sort list by most difficult
     # return average(difficultyIndex[:int(len(difficultyIndex) * 0.3)])          # Use the top 8 swings averaged as the return
-
+    swingData[0]['swingDiff'] = 0
     for i in range(1, len(swingData)):
         distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
         data.append({'swingSpeed': swingData[i]['frequency'] * distanceDiff * bps})
@@ -468,13 +472,13 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
         data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
         data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
-        data[-1]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4**(-data[-1]['swingSpeed']) + 1) * (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
+        swingData[i]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4**(-data[-1]['swingSpeed']) + 1) * (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
 
         if i > WINDOW:
             qDIFF.popleft()
-        qDIFF.append(data[-1]['swingDiff'])
+        qDIFF.append(swingData[i]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
-        windowDiff = average(tempList[:int(len(tempList) * 15 / WINDOW)]) * 0.80        # Top 15 notes out of the window
+        windowDiff = average(tempList[:int(len(tempList) * 25 / WINDOW)], 25) * 0.80        # Top 15 notes out of the window
         difficultyIndex.append(windowDiff)
     
     if isuser:
@@ -483,8 +487,10 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
         print(f"average {hand} hand stress {average([temp['stress'] for temp in data])}")
 
+    
+
     if len(difficultyIndex) > 0:
-        return max(difficultyIndex)
+        return max(difficultyIndex) 
     else:
         return 0
 
@@ -517,16 +523,21 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     tech = average(StrainList[int(len(StrainList) * 0.25):])
     passNum = max(diffToPass(LeftSwingData, bpm, 'left', isuser), diffToPass(RightSwingData, bpm, 'right', isuser))
 
+    staminaFactor = average([staminaCalc(LeftSwingData), staminaCalc(RightSwingData)])
+    balanced_pass = passNum * staminaFactor
+
     balanced_tech = tech * (-1.4**(-passNum) + 1)
 
     if verbose:
-        returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum, 'balanced_tech': balanced_tech}
+        returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum, 'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass}
     else:
-        returnDict = {'balanced_tech': balanced_tech, 'passing_difficulty': passNum}
+        returnDict = {'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass}
     if isuser:
         print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
+        print(f"Calculacted stamina factor = {staminaFactor}")
         print(f"Calculated pass diff = {passNum}")
         print(f"Calculated balanced tech = {balanced_tech}")
+        print(f"Calculated balanced pass diff = {balanced_pass}")
     return returnDict
 
 def mapCalculation(mapData, bpm, isuser=True, verbose=True):

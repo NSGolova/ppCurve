@@ -9,9 +9,10 @@ import math
 playerTestList = [2769016623220259,76561198059961776,76561198072855418,76561198075923914,76561198255595858,76561198404774259, 
     76561198225048252, 76561198110147969, 76561198081152434, 76561198204808809, 76561198072431907, 76561198989311828, 76561198960449289, 
     76561199104169308, 3225556157461414, 76561198410971373, 76561198153101808, 76561197995162898, 2169974796454690, 76561198166289091, 
-    76561198285246326, 76561198802040781, 76561198110018904, 76561198044544317, 2092178757563532, 76561198311143750]
+    76561198285246326, 76561198802040781, 76561198110018904, 76561198044544317, 2092178757563532, 76561198311143750, 76561198157672038,
+    76561199050525271]
 
-#playerTestList = [2092178757563532]
+#playerTestList = [76561199050525271]
 
 def searchDiffIndex(diffNum, diffList):
     for f in range(0, len(diffList)):
@@ -113,7 +114,7 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
         if mapData != None:
             AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
         else:
-            AiJSON['lackStats'] = {'tech': 0, 'passing_difficulty': 0}
+            AiJSON['lackStats'] = {'tech': 0, 'balanced_pass_diff': 0}
         try:
             os.mkdir(f"_AIcache/{hash}")
         except:
@@ -150,7 +151,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
 
                     AIacc = songStats['AIstats']['expected_acc']
                     playerACC = playerJSON['data'][i]['accuracy']
-                    passRating = songStats['lackStats']['passing_difficulty']
+                    passRating = songStats['lackStats']['balanced_pass_diff']
                     tech = songStats['lackStats']['balanced_tech']
                     
                     passPP = passRating * 14 
