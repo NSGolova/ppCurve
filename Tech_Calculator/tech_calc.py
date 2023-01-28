@@ -326,7 +326,7 @@ def staminaCalc(data: list):
     if burstDiff == 0:
         return 0
     staminaRatio = averageDiff / burstDiff
-    return 1 / (10 + 4**(-64 * (staminaRatio - 0.875))) + 0.9 + staminaRatio / 20
+    return 1 / (10 + 4**(-64 * (staminaRatio - 0.875))) + 0.9 + staminaRatio / 20 #https://www.desmos.com/calculator/y9wmoekzzd
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     if len(swingData) == 0:
         returnDict = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
@@ -539,10 +539,12 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
 
     balanced_tech = tech * (-1.4**(-passNum) + 1)
 
+    low_note_nerf = 1 / (1 + math.e**(-0.6 * (len(SwingData) / 100 + 1.5))) #https://www.desmos.com/calculator/wxnciaqviy
+
     if verbose:
-        returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum, 'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass}
+        returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum, 'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass, 'low_note_nerf': low_note_nerf}
     else:
-        returnDict = {'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass}
+        returnDict = {'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass, 'low_note_nerf': low_note_nerf}
     if isuser:
         print(f"Calculacted Tech = {tech}")        # Put Breakpoint here if you want to see
         print(f"Calculacted stamina factor = {staminaFactor}")

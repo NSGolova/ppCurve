@@ -164,9 +164,9 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
 
                     
                     playerTechPP = 1 / (1 + math.e**(-64 * (playerACC - 0.9))) * tech / (1 + math.e**(-16 * (tech - 0.5))) * 15 * AI600Star / max((0.3333 * passRating), 1)
-                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5 / (1 + math.e**(-8 * (passRating + 0.05)))
+                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5 # / (1 + math.e**(-8 * (passRating + 0.05)))
                     #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
-                    playerPP = passPP + playerAccPP + playerTechPP
+                    playerPP = (passPP + playerAccPP + playerTechPP) * songStats['lackStats']['low_note_nerf']
                     
                     newStats.append({})
                     newStats[-1]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
