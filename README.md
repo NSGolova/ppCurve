@@ -5,6 +5,7 @@ If someone pings me to make documentation I'll do it. Until the need arrives I'l
 
 ## Setting up environment
 
+```
 apt-get install python3 python3-pip
 pip install requests
 pip install install
@@ -12,6 +13,7 @@ pip install requests
 pip install numpy
 pip install packaging
 pip install scipy
+```
 
 ## Running the Tech Calculator
 
