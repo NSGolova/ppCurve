@@ -436,42 +436,6 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     WINDOW = 50       #Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
     difficultyIndex = []
     data = []
-    # for i in range(1, len(swingData)):      # Scan all swings, starting from 2nd swing
-        # # xPathDist = swingData[i]['exitPos'][0] - swingData[i-1]['exitPos'][0]
-        # # yPathDist = swingData[i]['exitPos'][1] - swingData[i-1]['exitPos'][1]
-        # # data.append({'preDistance': math.sqrt((xPathDist**2) + (yPathDist**2))})
-        # # distanceDiff = data[-1]['preDistance'] / (data[-1]['preDistance'] + 3) + 1
-        # distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
-        # if i > smoothing:       # Start removing old swings based on smoothing amount
-        #     SSSpeed -= qSS.popleft()
-        #     SSStress -= qST.popleft()
-        # qSS.append(swingData[i]['frequency'] * distanceDiff * bps)
-        # SSSpeed += qSS[-1]
-        # # data[-1]['swingSpeedAve'] = SSSpeed / smoothing
-        # data.append({'swingSpeedAve': SSSpeed / smoothing})
-
-        # xHitDist = swingData[i]['entryPos'][0] - swingData[i]['exitPos'][0]
-        # yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
-        # data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
-        # data[-1]['hitDiff'] =  data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
-
-        # qST.append((swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff'])
-        # SSStress += qST[-1]
-        # data[-1]['stressAve'] = SSStress / smoothing
-        
-        # difficulty = data[-1]['swingSpeedAve'] * (-1.4**(-data[-1]['swingSpeedAve']) + 1) * (data[-1]['stressAve'] / (data[-1]['stressAve'] + 2) + 1) * 0.80
-        # #difficulty = data[-1]['swingSpeedAve'] + data[-1]['stressAve']
-        # data[-1]['difficulty'] = difficulty
-        # difficultyIndex.append(difficulty)
-
-    # if isuser:
-    #     peakSS = [temp['swingSpeedAve'] for temp in data]
-    #     peakSS.sort(reverse=True)
-    #     print(f"peak {hand} hand speed {average(peakSS[:int(len(peakSS) / 16)])}")
-    #     print(f"average {hand} hand stress {average([temp['stressAve'] for temp in data])}")
-
-    # difficultyIndex.sort(reverse=True)      #Sort list by most difficult
-    # return average(difficultyIndex[:int(len(difficultyIndex) * 0.3)])          # Use the top 8 swings averaged as the return
     if len(swingData) == 0:
         return 0
     swingData[0]['swingDiff'] = 0
@@ -539,8 +503,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
 
     balanced_tech = tech * (-1.4**(-passNum) + 1)
 
-    low_note_nerf = 1 / (1 + math.e**(-0.6 * (len(SwingData) / 100 + 1.5))) #https://www.desmos.com/calculator/wxnciaqviy
-
+    low_note_nerf = 1 / (1 + math.e**(-0.6 * (len(SwingData) / 100 + 1.5))) #https://www.desmos.com/calculator/povnzsoytj
     if verbose:
         returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum, 'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass, 'low_note_nerf': low_note_nerf}
     else:
@@ -556,8 +519,8 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
 def mapCalculation(mapData, bpm, isuser=True, verbose=True):
     t0 = time.time()
     newMapData = mapPrep(mapData)
-    data = techOperations(newMapData, bpm, isuser, verbose)
     t1 = time.time()
+    data = techOperations(newMapData, bpm, isuser, verbose)
     if isuser:
         print(f'Execution Time = {t1-t0}')
     return data

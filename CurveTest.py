@@ -10,9 +10,9 @@ playerTestList = [2769016623220259,76561198059961776,76561198072855418,765611980
     76561198225048252, 76561198110147969, 76561198081152434, 76561198204808809, 76561198072431907, 76561198989311828, 76561198960449289, 
     76561199104169308, 3225556157461414, 76561198410971373, 76561198153101808, 76561197995162898, 2169974796454690, 76561198166289091, 
     76561198285246326, 76561198802040781, 76561198110018904, 76561198044544317, 2092178757563532, 76561198311143750, 76561198157672038,
-    76561199050525271]
+    76561199050525271, 76561198272028078]
 
-#playerTestList = [76561199050525271]
+# playerTestList = [3225556157461414, 76561198075923914]
 
 def searchDiffIndex(diffNum, diffList):
     for f in range(0, len(diffList)):
@@ -154,7 +154,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     passRating = songStats['lackStats']['balanced_pass_diff']
                     tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 14 
+                    passPP = passRating * 15
                     AI600accPP = 600
                     if AIacc != 0:
                         AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
@@ -163,10 +163,10 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                         AI600Star = (-tinyTech**(-passRating) + 1) * 8 + 2 + 0.1 * tech * passRating
 
                     
-                    playerTechPP = 1 / (1 + math.e**(-64 * (playerACC - 0.9))) * tech / (1 + math.e**(-16 * (tech - 0.5))) * 15 * AI600Star / max((0.3333 * passRating), 1)
-                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5 # / (1 + math.e**(-8 * (passRating + 0.05)))
-                    #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
-                    playerPP = (passPP + playerAccPP + playerTechPP) * songStats['lackStats']['low_note_nerf']
+                    playerTechPP = 1 / (1 + math.e**(-32 * (playerACC - 0.925))) * tech / (1 + math.e**(-8 * (tech - 0.25))) * 12.5 * AI600Star / max((0.3333 * passRating), 2)
+                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5
+                    
+                    playerPP = (passPP + playerAccPP + playerTechPP)
                     
                     newStats.append({})
                     newStats[-1]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
