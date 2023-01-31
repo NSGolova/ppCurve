@@ -13,13 +13,19 @@ with open(JSON_Path, encoding='ISO-8859-1') as playlist_json:
 xPair = []
 y1Pair = []
 y2Pair = []
-
-print("xKey to use")
+print("1 for basic PP vs Star, 2 for advanced")
 xKey = input()
-print("y1Key to use")
-y1Key = input()
-print("y2Key to use (type NULL or leave blank if only need one plot)")
-y2Key = input()
+if xKey == '1':
+    xKey = 'passRating'
+    y1Key = 'playerPP'
+    y2Key = 'null'
+else:
+    print("xKey to use")
+    xKey = input()
+    print("y1Key to use")
+    y1Key = input()
+    print("y2Key to use (type NULL or leave blank if only need one plot)")
+    y2Key = input()
 if y2Key == '':
     y2Key = 'null'
 

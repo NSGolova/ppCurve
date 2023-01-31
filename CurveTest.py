@@ -154,7 +154,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     passRating = songStats['lackStats']['balanced_pass_diff']
                     tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 15
+                    passPP = passRating * 22.5
                     AI600accPP = 600
                     if AIacc != 0:
                         AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
@@ -164,9 +164,11 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
 
                     
                     playerTechPP = 1 / (1 + math.e**(-32 * (playerACC - 0.925))) * tech / (1 + math.e**(-8 * (tech - 0.25))) * 12.5 * AI600Star / max((0.3333 * passRating), 2)
-                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5
+                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 25
                     
-                    playerPP = (passPP + playerAccPP + playerTechPP)
+                    playerPP = math.sqrt(passPP**2 + (playerAccPP + playerTechPP)**2)
+
+                    #playerPP = (playerPP + playerPP / (math.e**((-playerPP + 800) / 150))) * 1.15
                     
                     newStats.append({})
                     newStats[-1]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
