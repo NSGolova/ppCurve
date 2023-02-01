@@ -165,10 +165,11 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     
                     playerTechPP = 1 / (1 + math.e**(-32 * (playerACC - 0.925))) * tech / (1 + math.e**(-8 * (tech - 0.25))) * 12.5 * AI600Star / max((0.3333 * passRating), 2)
                     playerAccPP = curveAccMulti(playerACC) * AI600Star * 25
+                    refinedAccPP = playerAccPP + playerTechPP
                     
-                    playerPP = math.sqrt(passPP**2 + (playerAccPP + playerTechPP)**2)
-
-                    #playerPP = (playerPP + playerPP / (math.e**((-playerPP + 800) / 150))) * 1.15
+                    playerPP = math.sqrt(passPP**2 + refinedAccPP**2) * passPP * refinedAccPP / (passPP + refinedAccPP) / 250 + (0.25 * passPP) + (0.8 * refinedAccPP)
+                    #playerPP = playerPP * 0.75
+                    #playerPP = (playerPP + playerPP / (math.e**((-playerPP + 800) / 150))) * 1.4
                     
                     newStats.append({})
                     newStats[-1]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
