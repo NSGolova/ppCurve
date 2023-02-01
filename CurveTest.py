@@ -154,7 +154,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     passRating = songStats['lackStats']['balanced_pass_diff']
                     tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 22.5
+                    passPP = passRating * 15
                     AI600accPP = 600
                     if AIacc != 0:
                         AI600Star = AI600accPP / curveAccMulti(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
@@ -164,11 +164,13 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
 
                     
                     playerTechPP = 1 / (1 + math.e**(-32 * (playerACC - 0.925))) * tech / (1 + math.e**(-8 * (tech - 0.25))) * 12.5 * AI600Star / max((0.3333 * passRating), 2)
-                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 25
-                    
-                    playerPP = math.sqrt(passPP**2 + (playerAccPP + playerTechPP)**2)
-
-                    #playerPP = (playerPP + playerPP / (math.e**((-playerPP + 800) / 150))) * 1.15
+                    playerAccPP = curveAccMulti(playerACC) * AI600Star * 27.5
+                    refinedAccPP = playerAccPP + playerTechPP
+                    bonusPP = math.sqrt(passPP**2 + refinedAccPP**2) * passPP * refinedAccPP / (passPP + refinedAccPP) / 250
+                   
+                    playerPP = bonusPP + refinedAccPP
+                    playerPP = playerPP * 1.1
+                    #playerPP = (playerPP + playerPP / (math.e**((-playerPP + 800) / 150))) * 1.4
                     
                     newStats.append({})
                     newStats[-1]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
@@ -182,6 +184,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     newStats[-1]['passPP'] = passPP
                     newStats[-1]['techPP'] = playerTechPP
                     newStats[-1]['accPP'] = playerAccPP
+                    newStats[-1]['bonusPP'] = bonusPP
                     newStats[-1]['playerPP'] = playerPP
                     newStats[-1]['600PassStar'] = AI600Star
 
