@@ -4,6 +4,7 @@ import csv
 import sys
 sys.path.insert(0, 'Tech_Calculator/_BackendFiles')
 import MapDownloader
+
 def load_BSPath():
     try:
         f = open('Tech_Calculator/_BackendFiles/bs_path.txt', 'r')
@@ -18,7 +19,7 @@ def load_BSPath():
             #bsPath = askdirectory()
             bsPath = input()
             if bsPath[-1] not in ['\\', '/']:  # Checks if song path is empty
-                bsPath += '\\'
+                bsPath += os.sep
             try:
                 f = open('Tech_Calculator/_BackendFiles/bs_path.txt', 'w')
             except:
@@ -27,6 +28,7 @@ def load_BSPath():
     finally:
         f.close()
     return bsPath
+
 def writeToExcel(folderName,fileName,headerList,dataList):
     excelFileName = os.path.join(f"{folderName}/{fileName} export.csv")
     try:
@@ -58,10 +60,19 @@ def searchDiffNum(diffNum, diffList):
         if diffList[f]['value'] == diffNum:
             return f
 def findSongPath(song_id: str, isuser=True): # Returns the song folder path by searching the custom songs folder
+
     if isuser:
-        bsPath = f"{load_BSPath()}Beat Saber_Data\CustomLevels/"
+        bsPath = load_BSPath()
+        bsPath = os.path.join(bsPath, "Beat Saber_Data")
+        bsPath = os.path.join(bsPath, "CustomLevels")
+        # Creating the full path as we may not actually be within a
+        # Beat Saber install (I'm running this from within a VM.)
+        os.makedirs(bsPath, exist_ok=True)
     else:
-        bsPath = "_songCache/"
+        bsPath = "_songCache"
+
+    bsPath += os.sep
+
     song_options = os.listdir(bsPath)
     songFound = False
     for song in song_options:
