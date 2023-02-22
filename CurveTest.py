@@ -169,7 +169,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     passRating = songStats['lackStats']['balanced_pass_diff']
                     tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 15
+                    passPP = passRating * 22.5
                     AI600accPP = 600
                     if AIacc != 0:
                         AI600Star = AI600accPP / curveAccMultiAI(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
