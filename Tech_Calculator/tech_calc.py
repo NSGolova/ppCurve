@@ -562,11 +562,16 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
-    passNum = max(diffToPass(LeftSwingData, bpm, 'left', isuser), diffToPass(RightSwingData, bpm, 'right', isuser))
+    
+    passDiffLeft = diffToPass(LeftSwingData, bpm, 'left', isuser)
+    passDiffRight = diffToPass(RightSwingData, bpm, 'right', isuser)
+    passNum = max(passDiffLeft, passDiffRight)
 
-    staminaFactor = max(staminaCalc(LeftSwingData), staminaCalc(RightSwingData))
-    balanced_pass = passNum * staminaFactor
+    staminaFactorLeft = staminaCalc(LeftSwingData)
+    staminaFactorRight = staminaCalc(RightSwingData)
+    staminaFactor = max(staminaFactorLeft, staminaFactorRight)
 
+    balanced_pass = max(passDiffLeft * staminaFactorLeft, passDiffRight * staminaFactorRight)
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
 
     low_note_nerf = 1 / (1 + math.e**(-0.6 * (len(SwingData) / 100 + 1.5))) #https://www.desmos.com/calculator/povnzsoytj
