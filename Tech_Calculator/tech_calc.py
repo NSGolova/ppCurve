@@ -118,106 +118,169 @@ def calculateBaseEntryExit(cBlockP, cBlockA):
     entry = [cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
     exit = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
     return entry, exit
-def swingProcesser(mapSplitData: list):    # Returns a list of dictionaries for all swings returning swing angles and timestamps
+def isSameDirection(pBlockA, cBlockA):
+    if abs(pBlockA - cBlockA) <= 180:
+        if abs(pBlockA - cBlockA) <= 67.5:
+            return True
+    else:
+        if 360 - abs(pBlockA - cBlockA) <= 67.5:
+            return True
+    return False
+def reverseCutDirection(angle):
+    if angle >= 180:
+        return angle - 180
+    else:
+        return angle + 180
+def swapPositions(lis, pos1, pos2):
+    lis[pos1], lis[pos2] = lis[pos2], lis[pos1]
+    return lis
+def mod(x, m):
+    return (x % m + m) % m
+def fixPatternHead(mapSplitData: list):
+    for j in range(0, 3):
+        for i in range(1, len(mapSplitData) - 1):
+            temp = cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a']
+            if mapSplitData[i]['d'] == 8:
+                if 0.02 >= mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= -0.02:
+                    if mapSplitData[i - 1]['d'] != 8:
+                        temp = cut_direction_index[mapSplitData[i - 1]['d']] + mapSplitData[i - 1]['a']
+                elif 0.02 >= mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= -0.02:
+                    if mapSplitData[i + 1]['d'] != 8:
+                        temp = cut_direction_index[mapSplitData[i + 1]['d']] + mapSplitData[i + 1]['a']
+            if mapSplitData[i]['b'] == mapSplitData[i - 1]['b']:
+                if 67.5 < temp <= 112.5:
+                    if mapSplitData[i - 1]['y'] > mapSplitData[i]['y']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                elif 247.5 < temp <= 292.5:
+                    if mapSplitData[i - 1]['y'] < mapSplitData[i]['y']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                elif 157.5 < temp <= 202.5:
+                    if mapSplitData[i - 1]['x'] < mapSplitData[i]['x']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                elif 0 <= temp< 22.5 or 337.5 < temp < 360:
+                    if mapSplitData[i - 1]['x'] > mapSplitData[i]['x']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                elif 112.5 < temp <= 157.5:
+                    if mapSplitData[i - 1]['x'] < mapSplitData[i]['x']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                    elif mapSplitData[i - 1]['y'] > mapSplitData[i]['y']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                elif 22.5 < temp <= 67.5:
+                    if mapSplitData[i - 1]['x'] > mapSplitData[i]['x']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                    elif mapSplitData[i - 1]['y'] > mapSplitData[i]['y']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                elif 202.5 < temp <= 247.5:
+                    if mapSplitData[i - 1]['x'] < mapSplitData[i]['x']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                    elif mapSplitData[i - 1]['y'] < mapSplitData[i]['y']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                elif 292.5 < temp <= 337.5:
+                    if mapSplitData[i - 1]['x'] > mapSplitData[i]['x']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+                    elif mapSplitData[i - 1]['y'] < mapSplitData[i]['y']:
+                        mapSplitData = swapPositions(mapSplitData, i - 1, i)
+    return mapSplitData
+def processSwing(mapSplitData: list):
     mapSplitData = sorted(mapSplitData, key=lambda d: d['b'])
     swingData = []
-    for i in range(0, len(mapSplitData)):
-        isSlider = False
-        cBlockB = mapSplitData[i]['b']      # Current Block Position in Time in unit [Beats]        
-        cBlockA = cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a']      # Current Block Angle in degrees
-        cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
-        if i > 0:
-            pBlockB = mapSplitData[i-1]['b']    # Pre-cache data for neater code
-            pBlockA = swingData[-1]['angle'] # Previous Block Angle in degrees
-            pBlockP = [mapSplitData[i-1]['x'], mapSplitData[i-1]['y']]
-            if mapSplitData[i]['d'] == 8:   #Dot note? Just assume opposite angle. If it's a slider, the program will handle it
-                pBlockA = swingData[-1]['angle']
-                if cBlockB - pBlockB <= 0.03125:
-                    cBlockA = pBlockA
-                else:
-                    if pBlockA >= 180:
-                        cBlockA = pBlockA - 180
-                    else:
-                        cBlockA = pBlockA + 180
-            # All Pre-caching Done
-            if cBlockB - pBlockB >= 0.03125: # = 1/32 Just a check if notes are unreasonable close, just assume they're apart of the same swing
-                if cBlockB - pBlockB > 0.125: # = 1/8 The upper bound of normal slider precision commonly used
-                    if cBlockB - pBlockB > 0.5:    # = 1/2 About the limit of whats reasonable to expect from a slider
-                        swingData.append({'time': cBlockB, 'angle': cBlockA})
-                        swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-                    else: # 1/2 Check (just to weed out obvious non-sliders) More complicated methods need to be used
-                        if mapSplitData[i]['d'] != 8:
-                            if abs(cBlockA - pBlockA) < 112.5:  # 90 + 22.5 JUST IN CASE. not the full 90 + 45 since that would be one hell of a slider or dot note
-                                testAnglefromPosition = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
-                                averageAngleOfBlocks = (cBlockA + pBlockA) / 2
-                                if abs(testAnglefromPosition - averageAngleOfBlocks) <= 56.25:  # = 112.5 / 2 = 56.25
-                                    sliderTime = cBlockB - pBlockB
-                                    isSlider = True
-                                else:
-                                    swingData.append({'time': cBlockB, 'angle': cBlockA})       # Below calculates the entry and exit positions for each swing
-                                    swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-                            else:
-                                swingData.append({'time': cBlockB, 'angle': cBlockA})
-                                swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-                        else:       # Dot note thats also close? Swing detection gets a little more tricky
-                            if i < len(mapSplitData) - 1:   # Checks if the next memory access is legal
-                                if (cBlockB - pBlockB) - (mapSplitData[i+1]['b'] - cBlockB) < 0.125:    # Checks which swing the dot note is associated with.
-                                    sliderTime = cBlockB - pBlockB
-                                    isSlider = True
-                                else:
-                                    swingData.append({'time': cBlockB, 'angle': cBlockA})
-                                    swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-                else: # 1/8 Check
-                    if mapSplitData[i]['d'] == 8 or abs(cBlockA - pBlockA) < 90: # 90 degree check since 90 degrees is what most would consider the maximum angle for a slider or dot note
-                        sliderTime = 0.125
-                        isSlider = True
-                    else:
-                        swingData.append({'time': cBlockB, 'angle': cBlockA})
-                        swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-            else:   # 1/32 Check
-                sliderTime = 0.03125
-                isSlider = True
-            if isSlider:
-                for f in range(1, len(mapSplitData)):   # We clearly know the last block is a slider with the current block under test. Skip to the one before the last block. Should realistically never search more than 5 blocks deep
-                    blockIndex = i - f              # Index of the previous block to start comparisons with
-                    if blockIndex < 0:
-                        break      # We Reached the beginning of the map
-                    if (mapSplitData[blockIndex]['b'] - mapSplitData[blockIndex - 1]['b'] > 1.5 * sliderTime):       # use 2x slider time to account for any "irregularities" / margin of error. We are only comparing pairs of blocks
-                        pBlockB = mapSplitData[blockIndex]['b']                                             # Essentially finds then caches first block in the slider group
-                        pBlockA = cut_direction_index[mapSplitData[blockIndex]['d']] + mapSplitData[blockIndex]['a']
-                        pBlockP = [mapSplitData[blockIndex]['x'], mapSplitData[blockIndex]['y']]
-                        break
-                    if(mapSplitData[blockIndex]['d'] != 8):     
-                        break
-                
-                cBlockA = math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])) % 360 # Replaces angle swing from block angle to slider angle
-                if len(swingData) > 1:
-                    guideAngle = (swingData[-2]['angle'] - 180) % 360           # Use the opposite swing angle as a base starting point
-                else:
-                    guideAngle = 270        # First swing? use downward swing as a base starting guide
-                for f in range(1, len(mapSplitData)):       # Checker that will try to find a better guiding block (arrow block) for the slider angle prediction.
-                    blockIndex = i - f
-                    if mapSplitData[blockIndex]['b'] < pBlockB:     # Limits check to a little after the first slider block in the group
-                        break
-                    if mapSplitData[blockIndex]['d'] != 8:          # Breaks out of loop when it finds an arrow block
-                        guideAngle = cut_direction_index[mapSplitData[blockIndex]['d']]     # If you found an arrow, use it's angle
-                        break
-                if abs(cBlockA - guideAngle) > 90:       # If this is true, the predicted angle is wrong, likely by 180 degrees wrong
-                    if cBlockA >= 180:
-                        cBlockA -= 180               # Apply Fix
-                    else:
-                        cBlockA += 180                
-                swingData[-1]['angle'] = cBlockA
-                
-                xtest = (swingData[-1]['entryPos'][0] - (cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(math.radians(cBlockA))
-                ytest = (swingData[-1]['entryPos'][1] - (cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.sin(math.radians(cBlockA))
-                if xtest <= 0.001 and ytest >= 0.001:       # For sliders, one of the entry/exit positions is still correct, this figures out which one then replaces the other
-                    swingData[-1]['entryPos'] = [cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
-                else:
-                    swingData[-1]['exitPos'] = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]   
+
+    if len(mapSplitData) == 0:
+        return swingData
+
+    # Try to find the first note direction
+    if mapSplitData[0]['d'] == 8:
+        tempList = [a for a in mapSplitData if a['d'] != 8]
+        if len(tempList) > 0:
+            found = tempList[0]
+            foundAngle = cut_direction_index[found['d']] + found['a']
+            for i in range(mapSplitData.index(found), 0, -1):
+                first = reverseCutDirection(foundAngle)
+        elif mapSplitData[0]['y'] >= 2:
+            first = 90  # Assume the direction is up if the note is above
         else:
-            swingData.append({'time': cBlockB, 'angle': cBlockA})    # First Note Exception. will never be a slider or need to undergo any test
+            first = 270
+    else:
+        first = cut_direction_index[mapSplitData[0]['d']] + mapSplitData[0]['a']
+
+    # First note direction is now found
+    swingData.append({'time': mapSplitData[0]['b'], 'angle': first})
+    swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit([mapSplitData[0]['x'],
+                                                                                  mapSplitData[0]['y']], first)
+
+    # Attempt to find the right pattern head and put it in order
+    mapSplitData = fixPatternHead(mapSplitData)
+
+    # Handle the rest of the notes
+    for i in range(1, len(mapSplitData)):
+        if mapSplitData[0]['b'] == mapSplitData[i]['b'] and mapSplitData[i]['d'] == 8 and mapSplitData[i - 1]['d'] == 8:
+            continue
+
+        # Previous note
+        pBlockB = mapSplitData[i - 1]['b']
+        pBlockA = swingData[-1]['angle']
+        pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
+        # Current note
+        cBlockB = mapSplitData[i]['b']
+        cBlockA = cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a']
+        cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
+        # It's considered a pattern if under 1/4 beat and same direction or if one of the two note is dot
+        if (cBlockB - pBlockB < 0.245 and (cBlockA == pBlockA or mapSplitData[i]['d'] == 8 or
+                                          mapSplitData[i - 1]['d'] == 8)):
+            pattern = True
+        elif cBlockB - pBlockB < 0.255 and isSameDirection(pBlockA, cBlockA):
+            pattern = True
+        else:
+            pattern = False
+        # Is a dot and not a pattern
+        if mapSplitData[i]['d'] == 8 and not pattern:
+            swingData.append({'time': cBlockB, 'angle': reverseCutDirection(pBlockA)})
+            swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP,
+                                                                                         reverseCutDirection(pBlockA))
+        elif pattern:  # Is a pattern
+            for f in range(i, 0, -1):
+                if mapSplitData[f]['b'] - mapSplitData[f - 1]['b'] >= 0.25:
+                    pBlockB = mapSplitData[f]['b']
+                    pBlockP = [mapSplitData[f]['x'], mapSplitData[f]['y']]
+                    break
+                if f == 1:
+                    pBlockB = mapSplitData[0]['b']
+                    pBlockP = [mapSplitData[0]['x'], mapSplitData[0]['y']]
+
+            cBlockA = mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360)
+            if len(swingData) > 1:
+                guideAngle = mod((swingData[-2]['angle'] - 180), 360)
+            else:
+                guideAngle = 270
+
+            for f in range(i, 0, -1):
+                if mapSplitData[f]['b'] < pBlockB:
+                    break
+                if mapSplitData[f]['d'] != 8:
+                    guideAngle = cut_direction_index[mapSplitData[f]['d']] + mapSplitData[f]['a']
+                    break
+            if abs(cBlockA - guideAngle) > 90:  # Fix angle is necessary
+                cBlockA = reverseCutDirection(cBlockA)
+            swingData[-1]['angle'] = cBlockA  # Modify last angle saved
+
+            xtest = (swingData[-1]['entryPos'][0] - (
+                    cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(
+                math.radians(cBlockA))
+            ytest = (swingData[-1]['entryPos'][1] - (
+                    cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.sin(
+                math.radians(cBlockA))
+            if xtest <= 0.001 <= ytest:  # Modify either the last entry or the last exit
+                swingData[-1]['entryPos'] = [
+                    cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667,
+                    cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
+            else:
+                swingData[-1]['exitPos'] = [
+                    cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667,
+                    cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
+        elif not pattern:  # Normal arrow note
+            swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
+    # Now we have time, angle and entry/exit position for each swing
     return swingData
 def swingAngleStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 1 = Right
     strainAmount = 0
@@ -288,35 +351,34 @@ def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses
         testData2 = copy.deepcopy(patternData[p])
         for i in range(0, len(testData1)):  # Build Forehand TestData Build
             if i > 0:
-                if abs(testData1[i]['angle'] - testData1[i-1]['angle']) >= 67.5:     # If angles are too similar, assume reset since a write roll of that degree is crazy
-                    testData1[i]['forehand'] = not testData1[i-1]['forehand']
+                if isSameDirection(testData1[i - 1]['angle'], testData1[i]['angle']):
+                    testData1[i]['reset'] = True
+                    testData1[i]['forehand'] = testData1[i - 1]['forehand']
                 else:
-                    testData1[i]['forehand'] = testData1[i-1]['forehand']
+                    testData1[i]['reset'] = False
+                    testData1[i]['forehand'] = not testData1[i - 1]['forehand']
             else:
+                testData1[0]['reset'] = False
                 testData1[0]['forehand'] = True
         for i in range(0, len(testData2)):  # Build Banckhand TestData
             if i > 0:
-                if abs(testData2[i]['angle'] - testData2[i-1]['angle']) >= 67.5:     # = 45 + 22.5
-                    testData2[i]['forehand'] = not testData2[i-1]['forehand']
+                if isSameDirection(testData2[i - 1]['angle'], testData2[i]['angle']):
+                    testData2[i]['reset'] = True
+                    testData2[i]['forehand'] = testData2[i - 1]['forehand']
                 else:
-                    testData2[i]['forehand'] = testData2[i-1]['forehand']
+                    testData2[i]['reset'] = False
+                    testData2[i]['forehand'] = not testData2[i - 1]['forehand']
             else:
+                testData2[0]['reset'] = False
                 testData2[0]['forehand'] = False
-        forehandTest = swingAngleStrainCalc(testData1, leftOrRight)    # Test Data
-        backhandTest = swingAngleStrainCalc(testData2, leftOrRight)    # 
-        if forehandTest <= backhandTest:    #Prefer forehand starts over backhand if equal
-            newPatternData += testData1      # Forehand gave a lower stress value, therefore is the best option in terms of hand placement for the pattern
+        forehandTest = swingAngleStrainCalc(testData1, leftOrRight)  # Test Data
+        backhandTest = swingAngleStrainCalc(testData2, leftOrRight)  #
+        if forehandTest <= backhandTest:
+            newPatternData += testData1
         elif forehandTest > backhandTest:
             newPatternData += testData2
     for i in range(0, len(newPatternData)):
-        newPatternData[i]['angleStrain'] = swingAngleStrainCalc([newPatternData[i]], leftOrRight)  # Assigns individual strain values to each swing. Done like this in square brackets because the function expects a list.
-        if i > 0:
-            if newPatternData[i]['forehand'] == newPatternData[i-1]['forehand']:
-                newPatternData[i]['reset'] = True
-            else:
-                newPatternData[i]['reset'] = False
-        else:
-            newPatternData[i]['reset'] = False
+        newPatternData[i]['angleStrain'] = swingAngleStrainCalc([newPatternData[i]], leftOrRight)
     return newPatternData
 def staminaCalc(data: list):
     swingDiffList = [temp['swingDiff'] for temp in data]
@@ -351,22 +413,24 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         angleList = []
         distance = 0
         for f in range(1, min(len(xvals), len(yvals))):
-            angleList.append(math.degrees(math.atan2(yvals[f] - yvals[f-1], xvals[f] - xvals[f-1])) % 360)
-            distance += math.sqrt((yvals[f] - yvals[f-1])**2 + (xvals[f] - xvals[f-1])**2)
+            angleList.append(mod(math.degrees(math.atan2(yvals[f] - yvals[f - 1], xvals[f] - xvals[f - 1])), 360))
+            distance += math.sqrt((yvals[f] - yvals[f - 1]) ** 2 + (xvals[f] - xvals[f - 1]) ** 2)
             if f > 1:
-                angleChangeList.append(180 - abs(abs(angleList[-1] - angleList[-2]) - 180))   # Wacky formula to handle 5 - 355 situations
-        distance -= 0.75
+                angleChangeList.append(180 - abs(abs(angleList[-1] - angleList[-2]) - 180))
 
-        if i > 1:       # Will miss the very first reset if it exists but a sacrafice for speed
+        if i > 1:  # Three swings
             simHandCurPos = swingData[i]['entryPos']
-            if(swingData[i]['forehand'] == swingData[i-2]['forehand']):     #Start 2 swings back since it's the most likely
-                simHandPrePos = swingData[i-2]['entryPos']
-            elif(swingData[i]['forehand'] == swingData[i-1]['forehand']):
-                simHandPrePos = swingData[i-1]['entryPos']
-            else:
+            if swingData[i]['reset'] is False and swingData[i - 1]['reset'] is False:
+                simHandPrePos = swingData[i - 2]['entryPos']  # Normal flow
+            elif swingData[i]['reset'] is False and swingData[i - 1]['reset']:
+                simHandPrePos = swingData[i - 1]['entryPos']  # Reset into normal flow
+            elif swingData[i]['reset']:  # Normal flow into reset
+                simHandPrePos = swingData[i - 1]['entryPos']
+            else:  # Should technically never happen
                 simHandPrePos = simHandCurPos
-            positionDiff = math.sqrt((simHandCurPos[1] - simHandPrePos[1])**2 + (simHandCurPos[0] - simHandPrePos[0])**2)
-            positionComplexity = positionDiff**2
+            positionDiff = math.sqrt(
+                (simHandCurPos[1] - simHandPrePos[1]) ** 2 + (simHandCurPos[0] - simHandPrePos[0]) ** 2)
+            positionComplexity = positionDiff ** 2
 
         lengthOfList = len(angleChangeList) * (1 - 0.4)             # 0.2 + (1 - 0.8) = 0.4
 
@@ -443,7 +507,7 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
         data.append({'swingSpeed': swingData[i]['frequency'] * distanceDiff * bps})
         if swingData[i]['reset']:
-            data[-1]['swingSpeed'] *= 1.5
+            data[-1]['swingSpeed'] *= 2
         xHitDist = swingData[i]['entryPos'][0] - swingData[i]['exitPos'][0]
         yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
         data[-1]['hitDistance'] = math.sqrt((xHitDist**2) + (yHitDist**2))
@@ -482,8 +546,8 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     RightMapData = splitMapData(mapData, 1)
     bombData = splitMapData(mapData, 2)
     
-    LeftSwingData = swingProcesser(LeftMapData)
-    RightSwingData = swingProcesser(RightMapData)
+    LeftSwingData = processSwing(LeftMapData)
+    RightSwingData = processSwing(RightMapData)
     
     LeftPatternData = patternSplitter(LeftSwingData)
     RightPatternData = patternSplitter(RightSwingData)
@@ -500,10 +564,10 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     tech = average(StrainList[int(len(StrainList) * 0.25):])
     passNum = max(diffToPass(LeftSwingData, bpm, 'left', isuser), diffToPass(RightSwingData, bpm, 'right', isuser))
 
-    staminaFactor = average([staminaCalc(LeftSwingData), staminaCalc(RightSwingData)])
+    staminaFactor = max(staminaCalc(LeftSwingData), staminaCalc(RightSwingData))
     balanced_pass = passNum * staminaFactor
 
-    balanced_tech = tech * (-1.4**(-passNum) + 1)
+    balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
 
     low_note_nerf = 1 / (1 + math.e**(-0.6 * (len(SwingData) / 100 + 1.5))) #https://www.desmos.com/calculator/povnzsoytj
     if verbose:
