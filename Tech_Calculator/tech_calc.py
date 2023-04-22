@@ -228,11 +228,11 @@ def processSwing(mapSplitData: list):
         if mapSplitData[i]['d'] == 8:
             cBlockA = reverseCutDirection(pBlockA)
         
-        # It's considered a pattern if under 1/4 beat and same direction or if one of the two note is dot
-        if (cBlockB - pBlockB < 0.245 and (cBlockA == pBlockA or mapSplitData[i]['d'] == 8 or
+        # It's considered a pattern if under 1/8 beat and same direction or if one of the two note is dot
+        if (cBlockB - pBlockB < 0.125 and (cBlockA == pBlockA or mapSplitData[i]['d'] == 8 or
                                           mapSplitData[i - 1]['d'] == 8)):
             pattern = True
-        elif cBlockB - pBlockB < 0.255 and isSameDirection(pBlockA, cBlockA):
+        elif cBlockB - pBlockB < 0.5 and isSameDirection(pBlockA, cBlockA):  # Same direction under 1/2 beat
             pattern = True
         else:
             pattern = False
