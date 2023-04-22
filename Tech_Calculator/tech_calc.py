@@ -144,7 +144,7 @@ def fixPatternHead(mapSplitData: list):
                 if 0.02 >= mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= -0.02:
                     if mapSplitData[i - 1]['d'] != 8:
                         temp = cut_direction_index[mapSplitData[i - 1]['d']] + mapSplitData[i - 1]['a']
-                elif 0.02 >= mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= -0.02:
+                if 0.02 >= mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= -0.02:
                     if mapSplitData[i + 1]['d'] != 8:
                         temp = cut_direction_index[mapSplitData[i + 1]['d']] + mapSplitData[i + 1]['a']
             if mapSplitData[i]['b'] == mapSplitData[i - 1]['b']:
