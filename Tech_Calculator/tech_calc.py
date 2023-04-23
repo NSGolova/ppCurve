@@ -569,7 +569,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     
     passDiffLeft = diffToPass(LeftSwingData, bpm, 'left', isuser)
     passDiffRight = diffToPass(RightSwingData, bpm, 'right', isuser)
-    passNum = max(passDiffLeft, passDiffRight)
+    passNum = max(passDiffLeft, passDiffRight) * 0.9
 
     staminaFactorLeft = staminaCalc(LeftSwingData)
     staminaFactorRight = staminaCalc(RightSwingData)
