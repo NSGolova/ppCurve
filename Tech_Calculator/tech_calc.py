@@ -118,12 +118,17 @@ def calculateBaseEntryExit(cBlockP, cBlockA):
     entry = [cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
     exit = [cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667, cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
     return entry, exit
-def isSameDirection(pBlockA, cBlockA):
+def isSameDirection(pBlockA, cBlockA, restricted):
+    similar = 67.5
+    if restricted is True:
+        similar = 45
+    pBlockA = mod(pBlockA, 360)
+    pBlockA = mod(pBlockA, 360)
     if abs(pBlockA - cBlockA) <= 180:
-        if abs(pBlockA - cBlockA) <= 67.5:
+        if abs(pBlockA - cBlockA) < similar:
             return True
     else:
-        if 360 - abs(pBlockA - cBlockA) <= 67.5:
+        if 360 - abs(pBlockA - cBlockA) < similar:
             return True
     return False
 def reverseCutDirection(angle):
@@ -136,17 +141,36 @@ def swapPositions(lis, pos1, pos2):
     return lis
 def mod(x, m):
     return (x % m + m) % m
+def simulateSwingPos(x, y, direction):
+    if 67.5 < direction <= 112.5:
+        return x, y + 3
+    elif 247.5 < direction <= 292.5:
+        return x, y - 3
+    elif 157.5 < direction <= 202.5:
+        return x - 3, y
+    elif 0 <= direction < 22.5 or 337.5 < direction < 360:
+        return x + 3, y
+    elif 112.5 < direction <= 157.5:
+        return x - 1.5, y + 1.5
+    elif 22.5 < direction <= 67.5:
+        return x + 1.5, y + 1.5
+    elif 202.5 < direction <= 247.5:
+        return x - 1.5, y - 1.5
+    elif 292.5 < direction <= 337.5:
+        return x + 1.5, y - 3
+def findAngleViaPosition(mapSplitData: list, i, guideAngle, pattern):
+    pBlockP = simulateSwingPos(mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y'], mapSplitData[i - 1]['dir'])
+    cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
+    if pattern:
+        pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
+    currentAngle = mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360)
+    if isSameDirection(guideAngle, currentAngle, False):
+        currentAngle = reverseCutDirection(currentAngle)
+    return currentAngle
 def fixPatternHead(mapSplitData: list):
     for j in range(0, 3):
         for i in range(1, len(mapSplitData) - 1):
-            temp = cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a']
-            if mapSplitData[i]['d'] == 8:
-                if 0.02 >= mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= -0.02:
-                    if mapSplitData[i - 1]['d'] != 8:
-                        temp = cut_direction_index[mapSplitData[i - 1]['d']] + mapSplitData[i - 1]['a']
-                if 0.02 >= mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= -0.02:
-                    if mapSplitData[i + 1]['d'] != 8:
-                        temp = cut_direction_index[mapSplitData[i + 1]['d']] + mapSplitData[i + 1]['a']
+            temp = mapSplitData[i]['dir']
             if mapSplitData[i]['b'] == mapSplitData[i - 1]['b']:
                 if 67.5 < temp <= 112.5:
                     if mapSplitData[i - 1]['y'] > mapSplitData[i]['y']:
@@ -157,7 +181,7 @@ def fixPatternHead(mapSplitData: list):
                 elif 157.5 < temp <= 202.5:
                     if mapSplitData[i - 1]['x'] < mapSplitData[i]['x']:
                         mapSplitData = swapPositions(mapSplitData, i - 1, i)
-                elif 0 <= temp< 22.5 or 337.5 < temp < 360:
+                elif 0 <= temp < 22.5 or 337.5 < temp < 360:
                     if mapSplitData[i - 1]['x'] > mapSplitData[i]['x']:
                         mapSplitData = swapPositions(mapSplitData, i - 1, i)
                 elif 112.5 < temp <= 157.5:
@@ -181,102 +205,170 @@ def fixPatternHead(mapSplitData: list):
                     elif mapSplitData[i - 1]['y'] < mapSplitData[i]['y']:
                         mapSplitData = swapPositions(mapSplitData, i - 1, i)
     return mapSplitData
-def processSwing(mapSplitData: list):
+def flowDetector(mapSplitData: list, bombData: list):
+    if len(mapSplitData) < 2:
+        return
     mapSplitData = sorted(mapSplitData, key=lambda d: d['b'])
-    swingData = []
-
-    if len(mapSplitData) == 0:
-        return swingData
-
-    # Try to find the first note direction
+    testValue = 45
+    # Find the first note
     if mapSplitData[0]['d'] == 8:
         tempList = [a for a in mapSplitData if a['d'] != 8]
         if len(tempList) > 0:
             found = tempList[0]
             foundAngle = cut_direction_index[found['d']] + found['a']
             for i in range(mapSplitData.index(found), 0, -1):
-                first = reverseCutDirection(foundAngle)
+                if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.25:
+                    mapSplitData[0]['dir'] = reverseCutDirection(foundAngle)
         elif mapSplitData[0]['y'] >= 2:
-            first = 90  # Assume the direction is up if the note is above
+            mapSplitData[0]['dir'] = 90  # Assume the direction is up if the note is above
         else:
-            first = 270
+            mapSplitData[0]['dir'] = 270
     else:
-        first = cut_direction_index[mapSplitData[0]['d']] + mapSplitData[0]['a']
+        mapSplitData[0]['dir'] = cut_direction_index[mapSplitData[0]['d']] + mapSplitData[0]['a']
+    mapSplitData[0]['bomb'] = False
+    # Find the second note
+    if mapSplitData[1]['d'] == 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] >= 0.125:
+        mapSplitData[1]['dir'] = reverseCutDirection(mapSplitData[0]['dir'])
+    elif mapSplitData[1]['d'] == 8:
+        mapSplitData[1]['dir'] = mapSplitData[0]['dir']
+    else:
+        mapSplitData[1]['dir'] = cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a']
+    mapSplitData[1]['bomb'] = False
+    # Analyze the rest of the notes
+    for i in range(2, len(mapSplitData) - 1):
+        if mapSplitData[i]['d'] == 8:
+            # Bomb stuff
+            bomb = [b['y'] for b in bombData if mapSplitData[i - 1]['b'] < b['b'] <= mapSplitData[i]['b']
+                    and mapSplitData[i]['x'] == b['x']]
+            if len(bomb) > 0:
+                if bomb[-1] <= 0:
+                    mapSplitData[i]['dir'] = 270
+                elif bomb[-1] == 1:
+                    if mapSplitData[i]['y'] == 0:
+                        mapSplitData[i]['dir'] = 90
+                    else:
+                        mapSplitData[i]['dir'] = 270
+                elif bomb[-1] >= 2:
+                    mapSplitData[i]['dir'] = 90
 
-    # First note direction is now found
-    swingData.append({'time': mapSplitData[0]['b'], 'angle': first})
-    swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit([mapSplitData[0]['x'],
-                                                                                  mapSplitData[0]['y']], first)
-
-    # Attempt to find the right pattern head and put it in order
+                mapSplitData[i]['bomb'] = True
+                continue
+            else:
+                mapSplitData[i]['bomb'] = False
+            # Probably pattern
+            if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
+                mapSplitData[i]['dir'] = mapSplitData[i - 1]['dir']
+                continue
+            elif mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] < 0.125 and mapSplitData[i + 1]['d'] != 8:
+                mapSplitData[i]['dir'] = cut_direction_index[mapSplitData[i + 1]['d']] + mapSplitData[i + 1]['a']
+                continue
+            else:  # Probably not pattern
+                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], False)
+            if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'], False) is False:
+                continue
+            elif isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'] + testValue, False) is False:
+                mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
+                continue
+            elif isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'] - testValue, False) is False:
+                mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
+                continue
+        else:
+            # Bomb stuff
+            bomb = [b for b in bombData if mapSplitData[i - 1]['b'] < b['b'] <= mapSplitData[i]['b']
+                    and mapSplitData[i]['x'] == b['x']]
+            if len(bomb) > 0:
+                mapSplitData[i]['bomb'] = True
+            else:
+                mapSplitData[i]['bomb'] = False
+            mapSplitData[i]['dir'] = cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a']
     mapSplitData = fixPatternHead(mapSplitData)
+    for i in range(2, len(mapSplitData) - 2):
+        # Not pattern
+        if mapSplitData[i]['d'] == 8 and mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.125:
+            if (isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir'], False) is True and
+                isSameDirection(mapSplitData[i]['dir'], mapSplitData[i + 1]['dir'], False) is False) or \
+                    ((isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir'], False) is False and
+                      isSameDirection(mapSplitData[i]['dir'], mapSplitData[i + 1]['dir'], False) is True)):
 
-    # Handle the rest of the notes
+                if (isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i - 1]['dir'], False) is False and
+                        isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i + 1]['dir'],
+                                        False) is False):
+                    mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
+
+                elif (isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i - 1]['dir'],
+                                      False) is False and
+                      isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i + 1]['dir'], False) is False):
+                    mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
+        # Pattern
+        if mapSplitData[i]['d'] == 8 and mapSplitData[i - 1]['d'] == 8 and \
+                mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
+            if isSameDirection(mapSplitData[i + 1]['dir'], mapSplitData[i]['dir'], False) is True and \
+                    mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= 0.125:
+                if isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i - 1]['dir'], False) is False \
+                        and isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i + 1]['dir'],
+                                            False) is False:
+                    mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
+                    notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n > mapSplitData[i]['b'] - 0.125 and
+                             n['d'] == 8]
+                    for n in notes:
+                        n['dir'] = mapSplitData[i]['dir']
+                elif isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i - 1]['dir'], False) is False \
+                        and isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i + 1]['dir'],
+                                            False) is False:
+                    mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
+                    notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n > mapSplitData[i]['b'] - 0.125 and
+                             n['d'] == 8]
+                    for n in notes:
+                        n['dir'] = mapSplitData[i]['dir']
+                else:
+                    mapSplitData[i]['dir'] = reverseCutDirection(mapSplitData[i]['dir'])
+                    notes = [n for n in mapSplitData if
+                             mapSplitData[i]['b'] >= n['b'] > mapSplitData[i]['b'] - 0.125 and
+                             n['d'] == 8]
+                    for n in notes:
+                        n['dir'] = mapSplitData[i]['dir']
+
+    if mapSplitData[-1]['d'] == 8 and mapSplitData[-1]['b'] - mapSplitData[-2]['b'] >= 0.125:
+        mapSplitData[-1]['dir'] = reverseCutDirection(mapSplitData[len(mapSplitData) - 2]['dir'])
+    elif mapSplitData[-1]['d'] == 8:
+        mapSplitData[-1]['dir'] = mapSplitData[len(mapSplitData) - 2]['dir']
+    else:
+        mapSplitData[-1]['dir'] = cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a']
+    mapSplitData[-1]['bomb'] = False
+    return mapSplitData
+def processSwing(mapSplitData: list):
+    swingData = []
+    if len(mapSplitData) == 0:
+        return swingData
+    swingData.append({'time': mapSplitData[0]['b'], 'angle': mapSplitData[0]['dir']})
+    swingData[-1]['bomb'] = mapSplitData[0]['bomb']
+    swingData[-1]['entryPos'], swingData[-1]['exitPos'] = \
+        calculateBaseEntryExit((mapSplitData[0]['x'], mapSplitData[0]['y']), mapSplitData[0]['dir'])
     for i in range(1, len(mapSplitData)):
-        if mapSplitData[0]['b'] == mapSplitData[i]['b'] and mapSplitData[i]['d'] == 8 and mapSplitData[i - 1]['d'] == 8:
-            continue
-
-        # Previous note
         pBlockB = mapSplitData[i - 1]['b']
         pBlockA = swingData[-1]['angle']
-        pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
-        # Current note
         cBlockB = mapSplitData[i]['b']
-        cBlockA = cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a']
+        cBlockA = mapSplitData[i]['dir']
         cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
-        
-        if mapSplitData[i]['d'] == 8:
-            cBlockA = reverseCutDirection(pBlockA)
-        
-        # It's considered a pattern if under 1/8 beat and same direction or if one of the two note is dot
-        # or if under 1/16
-        if cBlockB - pBlockB < 0.0625:
+        if cBlockB - pBlockB < 0.5 and isSameDirection(pBlockA, cBlockA, True):
             pattern = True
-        elif (cBlockB - pBlockB < 0.125 and (cBlockA == pBlockA or mapSplitData[i]['d'] == 8 or
-                                          mapSplitData[i - 1]['d'] == 8)):
-            pattern = True
-        elif cBlockB - pBlockB < 0.5 and isSameDirection(pBlockA, cBlockA):  # Same direction under 1/2 beat
+        elif cBlockB - pBlockB < 0.125:
             pattern = True
         else:
             pattern = False
-        # Is a dot and not a pattern
-        if mapSplitData[i]['d'] == 8 and not pattern:
-            swingData.append({'time': cBlockB, 'angle': reverseCutDirection(pBlockA)})
-            swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP,
-                                                                                         reverseCutDirection(pBlockA))
-        elif pattern:  # Is a pattern
-            for f in range(i, 0, -1):
-                if mapSplitData[f]['b'] - mapSplitData[f - 1]['b'] >= 0.25:
-                    pBlockB = mapSplitData[f]['b']
-                    pBlockP = [mapSplitData[f]['x'], mapSplitData[f]['y']]
-                    break
-                if f == 1:
-                    pBlockB = mapSplitData[0]['b']
-                    pBlockP = [mapSplitData[0]['x'], mapSplitData[0]['y']]
-
-            cBlockA = mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360)
-            if len(swingData) > 1:
-                guideAngle = mod((swingData[-2]['angle'] - 180), 360)
-            else:
-                guideAngle = 270
-
-            for f in range(i, 0, -1):
-                if mapSplitData[f]['b'] < pBlockB:
-                    break
-                if mapSplitData[f]['d'] != 8:
-                    guideAngle = cut_direction_index[mapSplitData[f]['d']] + mapSplitData[f]['a']
-                    break
-            if abs(cBlockA - guideAngle) > 90:  # Fix angle is necessary
-                cBlockA = reverseCutDirection(cBlockA)
-            swingData[-1]['angle'] = cBlockA  # Modify last angle saved
-
+        if not pattern:
+            swingData.append({'time': cBlockB, 'angle': cBlockA})
+            swingData[-1]['bomb'] = mapSplitData[i]['bomb']
+            swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
+        elif pattern:
+            swingData[-1]['angle'] = cBlockA
             xtest = (swingData[-1]['entryPos'][0] - (
                     cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(
                 math.radians(cBlockA))
             ytest = (swingData[-1]['entryPos'][1] - (
                     cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.sin(
                 math.radians(cBlockA))
-            if xtest <= 0.001 <= ytest:  # Modify either the last entry or the last exit
+            if xtest <= 0.001 <= ytest:
                 swingData[-1]['entryPos'] = [
                     cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667,
                     cBlockP[1] * 0.333333 - math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
@@ -284,10 +376,6 @@ def processSwing(mapSplitData: list):
                 swingData[-1]['exitPos'] = [
                     cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667,
                     cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
-        elif not pattern:  # Normal arrow note
-            swingData.append({'time': cBlockB, 'angle': cBlockA})
-            swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-    # Now we have time, angle and entry/exit position for each swing
     return swingData
 def swingAngleStrainCalc(swingData: list, leftOrRight): # False or 0 = Left, True or 1 = Right
     strainAmount = 0
@@ -351,35 +439,45 @@ def patternSplitter(swingData: list):    # Does swing speed analysis to split th
         else:
             tempPlist.append(swingData[0])
     return patternList
-def parityPredictor(patternData: list, bombData: list, leftOrRight):    # Parses through a List of Lists of Dictionaries to calculate the most likely parity for each pattern
+def parityPredictor(patternData: list, leftOrRight):
+    if len(patternData) < 1:
+        return
     newPatternData = []
     for p in range(0, len(patternData)):
         testData1 = patternData[p]
         testData2 = copy.deepcopy(patternData[p])
         for i in range(0, len(testData1)):  # Build Forehand TestData Build
             if i > 0:
-                if isSameDirection(testData1[i - 1]['angle'], testData1[i]['angle']):
+                if isSameDirection(testData1[i - 1]['angle'], testData1[i]['angle'], False) is True \
+                        or testData1[i]['bomb'] is True:
                     testData1[i]['reset'] = True
                     testData1[i]['forehand'] = testData1[i - 1]['forehand']
                 else:
                     testData1[i]['reset'] = False
                     testData1[i]['forehand'] = not testData1[i - 1]['forehand']
             else:
-                testData1[0]['reset'] = False
+                if testData1[0]['bomb'] is True:
+                    testData1[0]['reset'] = True
+                else:
+                    testData1[0]['reset'] = False
                 testData1[0]['forehand'] = True
         for i in range(0, len(testData2)):  # Build Banckhand TestData
             if i > 0:
-                if isSameDirection(testData2[i - 1]['angle'], testData2[i]['angle']):
+                if isSameDirection(testData2[i - 1]['angle'], testData2[i]['angle'], False) is True \
+                        or testData2[i]['bomb'] is True:
                     testData2[i]['reset'] = True
                     testData2[i]['forehand'] = testData2[i - 1]['forehand']
                 else:
                     testData2[i]['reset'] = False
                     testData2[i]['forehand'] = not testData2[i - 1]['forehand']
             else:
-                testData2[0]['reset'] = False
+                if testData2[0]['bomb'] is True:
+                    testData2[0]['reset'] = True
+                else:
+                    testData2[0]['reset'] = False
                 testData2[0]['forehand'] = False
-        forehandTest = swingAngleStrainCalc(testData1, leftOrRight)  # Test Data
-        backhandTest = swingAngleStrainCalc(testData2, leftOrRight)  #
+        forehandTest = swingAngleStrainCalc(testData1, leftOrRight)
+        backhandTest = swingAngleStrainCalc(testData2, leftOrRight)
         if forehandTest <= backhandTest:
             newPatternData += testData1
         elif forehandTest > backhandTest:
@@ -429,9 +527,9 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
             simHandCurPos = swingData[i]['entryPos']
             if swingData[i]['reset'] is False and swingData[i - 1]['reset'] is False:
                 simHandPrePos = swingData[i - 2]['entryPos']  # Normal flow
-            elif swingData[i]['reset'] is False and swingData[i - 1]['reset']:
+            elif swingData[i]['reset'] is False and swingData[i - 1]['reset'] is True:
                 simHandPrePos = swingData[i - 1]['entryPos']  # Reset into normal flow
-            elif swingData[i]['reset']:  # Normal flow into reset
+            elif swingData[i]['reset'] is True:  # Normal flow into reset
                 simHandPrePos = swingData[i - 1]['entryPos']
             else:  # Should technically never happen
                 simHandPrePos = simHandCurPos
@@ -548,28 +646,30 @@ def combineAndSortList(array1, array2, key):
     return combinedArray
 
 def techOperations(mapData, bpm, isuser=True, verbose=True):
-
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     bombData = splitMapData(mapData, 2)
-    
+
+    LeftMapData = flowDetector(LeftMapData, bombData)
+    RightMapData = flowDetector(RightMapData, bombData)
+
     LeftSwingData = processSwing(LeftMapData)
     RightSwingData = processSwing(RightMapData)
-    
+
     LeftPatternData = patternSplitter(LeftSwingData)
     RightPatternData = patternSplitter(RightSwingData)
-    
-    LeftSwingData = parityPredictor(LeftPatternData, bombData, False)
-    RightSwingData = parityPredictor(RightPatternData, bombData, True)
-    
+
+    LeftSwingData = parityPredictor(LeftPatternData, False)
+    RightSwingData = parityPredictor(RightPatternData, True)
+
     LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
     RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
-    
+
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
-    
+
     passDiffLeft = diffToPass(LeftSwingData, bpm, 'left', isuser)
     passDiffRight = diffToPass(RightSwingData, bpm, 'right', isuser)
     passNum = max(passDiffLeft, passDiffRight) * 0.9
