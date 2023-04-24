@@ -184,15 +184,53 @@ def simulateSwingPos(x, y, direction):
         return x + 1.5, y - 3
 
 
+# Try to find if placement match for slider
+def isSlider(prev, next, direction):
+    if prev['x'] == next['x'] and prev['y'] == next['y']:
+        return True
+    if 67.5 < direction <= 112.5:
+        if prev['y'] < next['y']:
+            return True
+    elif 247.5 < direction <= 292.5:
+        if prev['y'] > next['y']:
+            return True
+    elif 157.5 < direction <= 202.5:
+        if prev['x'] > next['x']:
+            return True
+    elif 0 <= direction < 22.5 or 337.5 < direction < 360:
+        if prev['x'] < next['x']:
+            return True
+    elif 112.5 < direction <= 157.5:
+        if prev['y'] < next['y']:
+            return True
+        if prev['x'] > next['x']:
+            return True
+    elif 22.5 < direction <= 67.5:
+        if prev['y'] < next['y']:
+            return True
+        if prev['x'] < next['x']:
+            return True
+    elif 202.5 < direction <= 247.5:
+        if prev['y'] > next['y']:
+            return True
+        if prev['x'] > next['x']:
+            return True
+    elif 292.5 < direction <= 337.5:
+        if prev['y'] > next['y']:
+            return True
+        if prev['x'] < next['x']:
+            return True
+    return False
+
+
 # Find next angle by using last known position, next position and a guide angle
 def findAngleViaPosition(mapSplitData: list, i, guideAngle, pattern):
     pBlockP = simulateSwingPos(mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y'], mapSplitData[i - 1]['dir'])
     cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
     if pattern:
         pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
-    currentAngle = mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360)
-    if isSameDirection(guideAngle, currentAngle, False):
-        currentAngle = reverseCutDirection(currentAngle)
+    currentAngle = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1],
+                                                                                     pBlockP[0] - cBlockP[0])), 360))
     return currentAngle
 
 
@@ -294,13 +332,10 @@ def flowDetector(mapSplitData: list, bombData: list):
                 continue
             else:
                 mapSplitData[i]['bomb'] = False
-            # Probably a pattern
-            if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
-                mapSplitData[i]['dir'] = mapSplitData[i - 1]['dir']  # Assume that the direction is the same
-                continue
-            # If the next note got an arrow and is part of the pattern, assume that the direction is the same
-            elif mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] < 0.125 and mapSplitData[i + 1]['d'] != 8:
-                mapSplitData[i]['dir'] = cut_direction_index[mapSplitData[i + 1]['d']] + mapSplitData[i + 1]['a']
+            # If under 0.25 and placement matches, probably a pattern
+            if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25 \
+                    and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir']):
+                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], True)
                 continue
             else:  # Probably not a pattern, use position to find the direction
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], False)
@@ -353,7 +388,7 @@ def flowDetector(mapSplitData: list, bombData: list):
                                             False) is False:
                     mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
                     # Apply the modification to all the dot notes of the pattern
-                    notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n > mapSplitData[i]['b'] - 0.125 and
+                    notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n['b'] > mapSplitData[i]['b'] - 0.125 and
                              n['d'] == 8]
                     for n in notes:
                         n['dir'] = mapSplitData[i]['dir']
@@ -362,7 +397,7 @@ def flowDetector(mapSplitData: list, bombData: list):
                                             False) is False:
                     mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
                     # Apply the modification to all the dot notes of the pattern
-                    notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n > mapSplitData[i]['b'] - 0.125 and
+                    notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n['b'] > mapSplitData[i]['b'] - 0.125 and
                              n['d'] == 8]
                     for n in notes:
                         n['dir'] = mapSplitData[i]['dir']
@@ -399,12 +434,13 @@ def processSwing(mapSplitData: list):
         # Previous note
         pBlockB = mapSplitData[i - 1]['b']
         pBlockA = swingData[-1]['angle']
+        pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
         # Current note
         cBlockB = mapSplitData[i]['b']
         cBlockA = mapSplitData[i]['dir']
         cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
-        # If it's the same direction (under 45 degree) and is under half a beat, assume pattern.
-        if cBlockB - pBlockB < 0.5 and isSameDirection(pBlockA, cBlockA, True):
+        # If under or equal to 0.25 and placement match
+        if cBlockB - pBlockB <= 0.25 and isSlider(mapSplitData[i - 1], mapSplitData[i], pBlockA):
             pattern = True
         # If it's under 0.125, assume pattern
         elif cBlockB - pBlockB < 0.125:
