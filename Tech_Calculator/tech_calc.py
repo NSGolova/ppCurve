@@ -231,8 +231,12 @@ def findAngleViaPosition(mapSplitData: list, i, guideAngle, pattern):
         pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
     currentAngle = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1],
                                                                                      pBlockP[0] - cBlockP[0])), 360))
-    if isSameDirection(guideAngle, currentAngle, False):
-        currentAngle = reverseCutDirection(currentAngle)
+    if pattern:
+        if isSameDirection(guideAngle, currentAngle, False) is False:
+            currentAngle = reverseCutDirection(currentAngle)
+    else:
+        if isSameDirection(guideAngle, currentAngle, False) is True:
+            currentAngle = reverseCutDirection(currentAngle)
     return currentAngle
 
 
@@ -341,7 +345,7 @@ def flowDetector(mapSplitData: list, bombData: list):
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25 \
                     and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir']))  \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
-                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 2]['dir'], True)
+                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], True)
                 continue
             else:  # Probably not a pattern, use position to find the direction
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], False)
