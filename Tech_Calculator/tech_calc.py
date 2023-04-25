@@ -135,7 +135,7 @@ def calculateBaseEntryExit(cBlockP, cBlockA):
 
 def isSameDirection(pBlockA, cBlockA):
     pBlockA = mod(pBlockA, 360)
-    pBlockA = mod(pBlockA, 360)
+    cBlockA = mod(cBlockA, 360)
     if abs(pBlockA - cBlockA) <= 180:
         if abs(pBlockA - cBlockA) < 67.5:
             return True
