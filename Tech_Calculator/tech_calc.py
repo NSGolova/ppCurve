@@ -803,24 +803,26 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         end = RightMapData[-1]['b']
 
     # Copy map if note count is under 50
-    temp = end + 16
+    count = 1
     if LeftMapData is not None:
         if len(LeftMapData) > 2:
+            length = len(LeftMapData)
             while len(LeftMapData) < 50:
-                for i in range(0, len(LeftMapData)):
+                for i in range(0, length):
                     note = copy.deepcopy(LeftMapData[i])
-                    note['b'] += temp
+                    note['b'] += (end + 16) * count
                     LeftMapData.append(note)
-                temp += end + 16
-    temp = end + 16
+                count += 1
+    count = 1
     if RightMapData is not None:
         if len(RightMapData) > 2:
+            length = len(RightMapData)
             while len(RightMapData) < 50:
-                for i in range(0, len(RightMapData)):
+                for i in range(0, length):
                     note = copy.deepcopy(RightMapData[i])
-                    note['b'] += temp
+                    note['b'] += (end + 16) * count
                     RightMapData.append(note)
-                temp += end + 16
+                count += 1
 
     # Analyze the map
     if LeftMapData is not None:
