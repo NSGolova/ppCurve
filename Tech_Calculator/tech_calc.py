@@ -280,7 +280,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         tempList = [a for a in mapSplitData if a['d'] != 8]
         if len(tempList) > 0:
             found = tempList[0]
-            foundAngle = cut_direction_index[found['d']] + found['a']
+            foundAngle = mod(cut_direction_index[found['d']] + found['a'], 360)
             for i in range(mapSplitData.index(found), 0, -1):
                 if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.25:
                     mapSplitData[0]['dir'] = reverseCutDirection(foundAngle)
@@ -289,7 +289,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         else:
             mapSplitData[0]['dir'] = 270  # Otherwise down
     else:
-        mapSplitData[0]['dir'] = cut_direction_index[mapSplitData[0]['d']] + mapSplitData[0]['a']
+        mapSplitData[0]['dir'] = mod(cut_direction_index[mapSplitData[0]['d']] + mapSplitData[0]['a'], 360)
     # Not considered
     mapSplitData[0]['bomb'] = False
     # Find the second note
@@ -298,7 +298,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     elif mapSplitData[1]['d'] == 8:
         mapSplitData[1]['dir'] = mapSplitData[0]['dir']
     else:
-        mapSplitData[1]['dir'] = cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a']
+        mapSplitData[1]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
     # Not considered
     mapSplitData[1]['bomb'] = False
     # Analyze the rest of the notes
@@ -337,7 +337,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                 mapSplitData[i]['dir'] = reverseCutDirection(mapSplitData[i - 1]['dir'])
             # Check if the direction found work, otherwise check with the testValue
             if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']) is False:
-                nextDir = mod(cut_direction_index[mapSplitData[i + 1]['d'] + mapSplitData[i + 1]['a']], 360)
+                nextDir = mod(cut_direction_index[mapSplitData[i + 1]['d']] + mapSplitData[i + 1]['a'], 360)
                 # Verify next note if possible (not a dot)
                 if mapSplitData[i + 1]['d'] != 8 and isSameDirection(mapSplitData[i]['dir'], nextDir):
                     if isSameDirection(mapSplitData[i]['dir'] + testValue, nextDir) is False:
@@ -368,7 +368,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                     mapSplitData[i]['dir'] = mod(mapSplitData[i] - testValue * 2, 360)
             # If it reach here, then the direction couldn't be handled properly
         else:  # Arrow note
-            mapSplitData[i]['dir'] = cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a']
+            mapSplitData[i]['dir'] = mod(cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a'], 360)
             # Bomb stuff, same logic as dot but doesn't change the direction
             bomb = [b for b in bombData if mapSplitData[i - 1]['b'] < b['b'] <= mapSplitData[i]['b']
                     and mapSplitData[i]['x'] == b['x']]
@@ -432,7 +432,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     elif mapSplitData[-1]['d'] == 8:
         mapSplitData[-1]['dir'] = mapSplitData[len(mapSplitData) - 2]['dir']
     else:
-        mapSplitData[-1]['dir'] = cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a']
+        mapSplitData[-1]['dir'] = mod(cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a'], 360)
     mapSplitData[-1]['bomb'] = False
     return mapSplitData
 
@@ -487,7 +487,7 @@ def processSwing(mapSplitData: list):
                 if mapSplitData[f]['b'] < pBlockB:
                     break
                 if mapSplitData[f]['d'] != 8:
-                    guideAngle = cut_direction_index[mapSplitData[f]['d']] + mapSplitData[f]['a']
+                    guideAngle = mod(cut_direction_index[mapSplitData[f]['d']] + mapSplitData[f]['a'], 360)
                     break
             if isSameDirection(cBlockA, guideAngle) is False:  # Fix angle is necessary
                 cBlockA = reverseCutDirection(cBlockA)
