@@ -485,6 +485,8 @@ def processSwing(mapSplitData: list):
             if mapSplitData[i]['d'] == 8:
                 swingData[-1]['angle'] = reverseCutDirection(
                     mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360))
+            else:
+                swingData[-1]['angle'] = cBlockA
             xtest = (swingData[-1]['entryPos'][0] - (
                     cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(
                 math.radians(cBlockA))
