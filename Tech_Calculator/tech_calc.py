@@ -166,22 +166,7 @@ def mod(x, m):
 
 # Extend the direction to find new position
 def simulateSwingPos(x, y, direction):
-    if 67.5 < direction <= 112.5:
-        return x, y + 3
-    elif 247.5 < direction <= 292.5:
-        return x, y - 3
-    elif 157.5 < direction <= 202.5:
-        return x - 3, y
-    elif 0 <= direction < 22.5 or 337.5 < direction < 360:
-        return x + 3, y
-    elif 112.5 < direction <= 157.5:
-        return x - 1.5, y + 1.5
-    elif 22.5 < direction <= 67.5:
-        return x + 1.5, y + 1.5
-    elif 202.5 < direction <= 247.5:
-        return x - 1.5, y - 1.5
-    elif 292.5 < direction <= 337.5:
-        return x + 1.5, y - 3
+    return (math.cos(math.radians(direction)) * 1.5, math.sin(math.radians(direction)) * 1.5)
 
 
 # Try to find if placement match for slider
