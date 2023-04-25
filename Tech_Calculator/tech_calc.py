@@ -810,7 +810,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
             while len(LeftMapData) < 50:
                 for i in range(0, length):
                     note = copy.deepcopy(LeftMapData[i])
-                    note['b'] += (end + 16) * count
+                    note['b'] += end * count + 16
                     LeftMapData.append(note)
                 count += 1
     count = 1
@@ -820,7 +820,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
             while len(RightMapData) < 50:
                 for i in range(0, length):
                     note = copy.deepcopy(RightMapData[i])
-                    note['b'] += (end + 16) * count
+                    note['b'] += end * count + 16
                     RightMapData.append(note)
                 count += 1
 
