@@ -580,9 +580,9 @@ def patternSplitter(swingData: list):
 # Apply best swing angle strain
 # Set if the swing is a reset (or bomb) or is forehand
 def parityPredictor(patternData: list, leftOrRight):
+    newPatternData = []
     if len(patternData) == 0:
         return newPatternData
-    newPatternData = []
     for p in range(0, len(patternData)):
         testData1 = patternData[p]
         testData2 = copy.deepcopy(patternData[p])
