@@ -538,7 +538,9 @@ def bezierAngleStrainCalc(angleData: list, forehand, leftOrRight):
 
  
 # Does swing speed analysis to split the long list of dictionaries into smaller lists of patterns containing lists of dictionaries
-def patternSplitter(swingData: list):   
+def patternSplitter(swingData: list): 
+    if len(swingData) < 2:
+        return []
     for i in range(0, len(swingData)):   # Swing Frequency Analyzer
         if i > 0 and i+1 < len(swingData):    # Checks done so we don't try to access data that doesn't exist
             SF = 2/(swingData[i+1]['time'] - swingData[i-1]['time'])    # Swing Frequency
@@ -578,8 +580,8 @@ def patternSplitter(swingData: list):
 # Apply best swing angle strain
 # Set if the swing is a reset (or bomb) or is forehand
 def parityPredictor(patternData: list, leftOrRight):
-    if len(swingData) < 2:
-        return []
+    if len(patternData) == 0:
+        return newPatternData
     newPatternData = []
     for p in range(0, len(patternData)):
         testData1 = patternData[p]
@@ -792,15 +794,18 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     # Sort and find final beat
     end = 0
     if LeftMapData is not None and RightMapData is not None:
-        LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
-        RightMapData = sorted(RightMapData, key=lambda d: d['b'])
-        end = max(LeftMapData[-1]['b'], RightMapData[-1]['b'])
+        if len(LeftMapData) > 0 and len(RightMapData) > 0:
+            LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
+            RightMapData = sorted(RightMapData, key=lambda d: d['b'])
+            end = max(LeftMapData[-1]['b'], RightMapData[-1]['b'])
     elif LeftMapData is not None:
-        LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
-        end = LeftMapData[-1]['b']
+        if len(LeftMapData) > 0:
+            LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
+            end = LeftMapData[-1]['b']
     elif RightMapData is not None:
-        RightMapData = sorted(RightMapData, key=lambda d: d['b'])
-        end = RightMapData[-1]['b']
+        if len(RightMapData) > 0:
+            RightMapData = sorted(RightMapData, key=lambda d: d['b'])
+            end = RightMapData[-1]['b']
 
     # Copy map if note count is under 50
     temp = end
