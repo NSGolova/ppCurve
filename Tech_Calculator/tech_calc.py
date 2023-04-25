@@ -338,9 +338,10 @@ def flowDetector(mapSplitData: list, bombData: list):
             else:
                 mapSplitData[i]['bomb'] = False
             # If under 0.25 and placement matches, probably a pattern
-            if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25 \
-                    and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir']):
-                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], True)
+            if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25 \
+                    and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir']))  \
+                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
+                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 2]['dir'], True)
                 continue
             else:  # Probably not a pattern, use position to find the direction
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], False)
