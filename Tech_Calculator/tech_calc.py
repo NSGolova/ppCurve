@@ -482,7 +482,9 @@ def processSwing(mapSplitData: list):
             swingData[-1]['bomb'] = mapSplitData[i]['bomb']
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
         elif pattern:   # Modify the angle and entry or exit position, but doesn't create a new swing data
-            swingData[-1]['angle'] = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1]-cBlockP[1], pBlockP[0]-cBlockP[0])), 360))
+            if mapSplitData[i]['d'] == 8:
+                swingData[-1]['angle'] = reverseCutDirection(
+                    mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360))
             xtest = (swingData[-1]['entryPos'][0] - (
                     cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(
                 math.radians(cBlockA))
