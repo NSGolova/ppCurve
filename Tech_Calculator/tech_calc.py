@@ -266,11 +266,14 @@ def fixPatternHead(mapSplitData: list):
 # Find angle in degree for each note
 # Proceed to fix some possible issue afterward
 # Also detect bomb "reset"
-def flowDetector(mapSplitData: list, bombData: list):
+def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     if len(mapSplitData) < 2:
         return mapSplitData
     # This is the value that dot note will be tested to find a working flow
-    testValue = 45
+    if leftOrRight:
+        testValue = 45
+    else:
+        testValue = -45
     # Find the first note
     if mapSplitData[0]['d'] == 8:
         # Use the first arrow found to reverse search the direction
@@ -837,13 +840,13 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
 
     # Analyze the map
     if LeftMapData is not None:
-        LeftMapData = flowDetector(LeftMapData, bombData)
+        LeftMapData = flowDetector(LeftMapData, bombData, False)
         LeftSwingData = processSwing(LeftMapData)
         LeftPatternData = patternSplitter(LeftSwingData)
         LeftSwingData = parityPredictor(LeftPatternData, False)
         LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
     if RightMapData is not None:
-        RightMapData = flowDetector(RightMapData, bombData)
+        RightMapData = flowDetector(RightMapData, bombData, True)
         RightSwingData = processSwing(RightMapData)
         RightPatternData = patternSplitter(RightSwingData)
         RightSwingData = parityPredictor(RightPatternData, True)
