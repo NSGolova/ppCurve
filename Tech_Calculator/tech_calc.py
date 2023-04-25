@@ -325,14 +325,16 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                 continue
             else:
                 mapSplitData[i]['bomb'] = False
-            # If under 0.25 and placement matches, probably a pattern
+           # If under 0.25 and placement matches, probably a pattern
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25 \
-                    and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir']))  \
+                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'])) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
-                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], True)
+                # mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], True)
+                mapSplitData[i]['dir'] = mapSplitData[i - 1]['dir']
                 continue
-            else:  # Probably not a pattern, use position to find the direction
-                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], False)
+            else:  # Probably not a pattern, reverse direction
+                # mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], False)
+                mapSplitData[i]['dir'] = reverseCutDirection(mapSplitData[i - 1]['dir'])
             # Check if the direction found work, otherwise check with the testValue
             if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']) is False:
                 nextDir = mod(cut_direction_index[mapSplitData[i + 1]['d'] + mapSplitData[i + 1]['a']], 360)
