@@ -267,8 +267,6 @@ def fixPatternHead(mapSplitData: list):
 # Proceed to fix some possible issue afterward
 # Also detect bomb "reset"
 def flowDetector(mapSplitData: list, bombData: list):
-    if len(mapSplitData) < 2:
-        return
     mapSplitData = sorted(mapSplitData, key=lambda d: d['b'])
     # This is the value that dot note will be tested to find a working flow
     testValue = 45
@@ -436,8 +434,6 @@ def flowDetector(mapSplitData: list, bombData: list):
 # Convert notes and patterns into swing data
 def processSwing(mapSplitData: list):
     swingData = []
-    if len(mapSplitData) == 0:
-        return swingData
     # First note
     swingData.append({'time': mapSplitData[0]['b'], 'angle': mapSplitData[0]['dir']})
     swingData[-1]['bomb'] = mapSplitData[0]['bomb']
@@ -579,8 +575,6 @@ def patternSplitter(swingData: list):
 # Apply best swing angle strain
 # Set if the swing is a reset (or bomb) or is forehand
 def parityPredictor(patternData: list, leftOrRight):
-    if len(patternData) < 1:
-        return
     newPatternData = []
     for p in range(0, len(patternData)):
         testData1 = patternData[p]
@@ -638,9 +632,6 @@ def staminaCalc(data: list):
 
 
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
-    if len(swingData) == 0:
-        returnDict = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
-        return swingData, returnDict
     swingData[0]['pathStrain'] = 0  # First Note cannot really have any path strain
     testData = []
     for i in range(1, len(swingData)):
@@ -784,21 +775,25 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     bombData = splitMapData(mapData, 2)
+    LeftSwingData = []
+    leftVerbose = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
+    RightSwingData = []
+    rightVerbose = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
 
-    LeftMapData = flowDetector(LeftMapData, bombData)
-    RightMapData = flowDetector(RightMapData, bombData)
-
-    LeftSwingData = processSwing(LeftMapData)
-    RightSwingData = processSwing(RightMapData)
-
-    LeftPatternData = patternSplitter(LeftSwingData)
-    RightPatternData = patternSplitter(RightSwingData)
-
-    LeftSwingData = parityPredictor(LeftPatternData, False)
-    RightSwingData = parityPredictor(RightPatternData, True)
-
-    LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
-    RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
+    if LeftMapData is not None:
+        if len(LeftMapData) > 50:
+            LeftMapData = flowDetector(LeftMapData, bombData)
+            LeftSwingData = processSwing(LeftMapData)
+            LeftPatternData = patternSplitter(LeftSwingData)
+            LeftSwingData = parityPredictor(LeftPatternData, False)
+            LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
+    if RightMapData is not None:
+        if len(RightMapData) > 50:
+            RightMapData = flowDetector(RightMapData, bombData)
+            RightSwingData = processSwing(RightMapData)
+            RightPatternData = patternSplitter(RightSwingData)
+            RightSwingData = parityPredictor(RightPatternData, True)
+            RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
 
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
