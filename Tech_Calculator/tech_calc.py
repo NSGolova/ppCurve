@@ -798,6 +798,12 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
             LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
             RightMapData = sorted(RightMapData, key=lambda d: d['b'])
             end = max(LeftMapData[-1]['b'], RightMapData[-1]['b'])
+        elif len(LeftMapData) > 0:
+            LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
+            end = LeftMapData[-1]['b']
+        elif len(RightMapData) > 0:
+            RightMapData = sorted(RightMapData, key=lambda d: d['b'])
+            end = RightMapData[-1]['b']
     elif LeftMapData is not None:
         if len(LeftMapData) > 0:
             LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
