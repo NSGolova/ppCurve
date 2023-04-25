@@ -133,17 +133,14 @@ def calculateBaseEntryExit(cBlockP, cBlockA):
     return entry, exit
 
 
-def isSameDirection(pBlockA, cBlockA, restricted):
-    similar = 67.5
-    if restricted is True:
-        similar = 45
+def isSameDirection(pBlockA, cBlockA):
     pBlockA = mod(pBlockA, 360)
     pBlockA = mod(pBlockA, 360)
     if abs(pBlockA - cBlockA) <= 180:
-        if abs(pBlockA - cBlockA) < similar:
+        if abs(pBlockA - cBlockA) < 67.5:
             return True
     else:
-        if 360 - abs(pBlockA - cBlockA) < similar:
+        if 360 - abs(pBlockA - cBlockA) < 67.5:
             return True
     return False
 
@@ -217,10 +214,10 @@ def findAngleViaPosition(mapSplitData: list, i, guideAngle, pattern):
     currentAngle = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1],
                                                                                      pBlockP[0] - cBlockP[0])), 360))
     if pattern:
-        if isSameDirection(guideAngle, currentAngle, False) is False:
+        if isSameDirection(guideAngle, currentAngle) is False:
             currentAngle = reverseCutDirection(currentAngle)
     else:
-        if isSameDirection(guideAngle, currentAngle, False) is True:
+        if isSameDirection(guideAngle, currentAngle) is True:
             currentAngle = reverseCutDirection(currentAngle)
     return currentAngle
 
@@ -319,7 +316,7 @@ def flowDetector(mapSplitData: list, bombData: list):
                 elif bomb[-1] >= 2:
                     mapSplitData[i]['dir'] = 90 
                 # This value will be used in the parityPredictor, it need to be assigned to each note
-                if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'], False):
+                if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']):
                     mapSplitData[i]['bomb'] = True
                 else:
                     mapSplitData[i]['bomb'] = False
@@ -335,34 +332,34 @@ def flowDetector(mapSplitData: list, bombData: list):
             else:  # Probably not a pattern, use position to find the direction
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'], False)
             # Check if the direction found work, otherwise check with the testValue
-            if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'], False) is False:
+            if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']) is False:
                 nextDir = mod(cut_direction_index[mapSplitData[i + 1]['d'] + mapSplitData[i + 1]['a']], 360)
                 # Verify next note if possible (not a dot)
-                if mapSplitData[i + 1]['d'] != 8 and isSameDirection(mapSplitData[i]['dir'], nextDir, False):
-                    if isSameDirection(mapSplitData[i]['dir'] + testValue, nextDir, False) is False:
+                if mapSplitData[i + 1]['d'] != 8 and isSameDirection(mapSplitData[i]['dir'], nextDir):
+                    if isSameDirection(mapSplitData[i]['dir'] + testValue, nextDir) is False:
                         mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
                         continue
-                    elif isSameDirection(mapSplitData[i]['dir'] - testValue, nextDir, False) is False:
+                    elif isSameDirection(mapSplitData[i]['dir'] - testValue, nextDir) is False:
                         mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
                         continue
                 continue
             # Try with + testValue
-            elif isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'] + testValue, False) is False:
+            elif isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'] + testValue) is False:
                 mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
                 continue
             # Try with - testValue
-            elif isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'] - testValue, False) is False:
+            elif isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'] - testValue) is False:
                 mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
                 continue
             # Maybe the note before (dot) is wrong? Attempt to fix here
-            if mapSplitData[i - 1]['d'] == 8 and isSameDirection(mapSplitData[i - 2]['dir'], mapSplitData[i - 1]['dir'] + testValue, False) is False:
+            if mapSplitData[i - 1]['d'] == 8 and isSameDirection(mapSplitData[i - 2]['dir'], mapSplitData[i - 1]['dir'] + testValue) is False:
                 lastDir = mod(mapSplitData[i - 1]['dir'] + testValue, 360)
-                if isSameDirection(lastDir, mapSplitData[i]['dir'] + testValue * 2, False) is False:
+                if isSameDirection(lastDir, mapSplitData[i]['dir'] + testValue * 2) is False:
                     mapSplitData[i - 1]['dir'] = mod(mapSplitData[i - 1] + testValue, 360)
                     mapSplitData[i]['dir'] = mod(mapSplitData[i] + testValue * 2, 360)
-            elif mapSplitData[i - 1]['d'] == 8 and isSameDirection(mapSplitData[i - 2]['dir'], mapSplitData[i - 1]['dir'] - testValue, False) is False:
+            elif mapSplitData[i - 1]['d'] == 8 and isSameDirection(mapSplitData[i - 2]['dir'], mapSplitData[i - 1]['dir'] - testValue) is False:
                 lastDir = mod(mapSplitData[i - 1]['dir'] - testValue, 360)
-                if isSameDirection(lastDir, mapSplitData[i]['dir'] - testValue * 2, False) is False:
+                if isSameDirection(lastDir, mapSplitData[i]['dir'] - testValue * 2) is False:
                     mapSplitData[i - 1]['dir'] = mod(mapSplitData[i - 1] - testValue, 360)
                     mapSplitData[i]['dir'] = mod(mapSplitData[i] - testValue * 2, 360)
             # If it reach here, then the direction couldn't be handled properly
@@ -372,7 +369,7 @@ def flowDetector(mapSplitData: list, bombData: list):
             bomb = [b for b in bombData if mapSplitData[i - 1]['b'] < b['b'] <= mapSplitData[i]['b']
                     and mapSplitData[i]['x'] == b['x']]
             if len(bomb) > 0:
-                if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir'], False):
+                if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']):
                     mapSplitData[i]['bomb'] = True
                 else:
                     mapSplitData[i]['bomb'] = False
@@ -383,38 +380,34 @@ def flowDetector(mapSplitData: list, bombData: list):
     for i in range(2, len(mapSplitData) - 2):
         # Not a pattern and the note parity only work from before or after
         if mapSplitData[i]['d'] == 8 and mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.125:
-            if (isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir'], False) is True and
-                isSameDirection(mapSplitData[i]['dir'], mapSplitData[i + 1]['dir'], False) is False) or \
-                    ((isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir'], False) is False and
-                      isSameDirection(mapSplitData[i]['dir'], mapSplitData[i + 1]['dir'], False) is True)):
+            if (isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir']) is True and
+                isSameDirection(mapSplitData[i]['dir'], mapSplitData[i + 1]['dir']) is False) or \
+                    ((isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir']) is False and
+                      isSameDirection(mapSplitData[i]['dir'], mapSplitData[i + 1]['dir']) is True)):
                 #  Attempt to fix the direction using testValue
-                if (isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i - 1]['dir'], False) is False and
-                        isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i + 1]['dir'],
-                                        False) is False):
+                if (isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i - 1]['dir']) is False and
+                        isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i + 1]['dir']) is False):
                     mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
-                elif (isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i - 1]['dir'],
-                                      False) is False and
-                      isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i + 1]['dir'], False) is False):
+                elif (isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i - 1]['dir']) is False and
+                      isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i + 1]['dir']) is False):
                     mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
         # Is a pattern and both notes are dot
         if mapSplitData[i]['d'] == 8 and mapSplitData[i - 1]['d'] == 8 and \
                 mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
             # Next note isn't part of the pattern and currently doesn't flow
-            if isSameDirection(mapSplitData[i + 1]['dir'], mapSplitData[i]['dir'], False) is True and \
+            if isSameDirection(mapSplitData[i + 1]['dir'], mapSplitData[i]['dir']) is True and \
                     mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= 0.125:
                 #  Attempt to fix the direction using testValue
-                if isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i - 1]['dir'], False) is False \
-                        and isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i + 1]['dir'],
-                                            False) is False:
+                if isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i - 1]['dir']) is False \
+                        and isSameDirection(mapSplitData[i]['dir'] + testValue, mapSplitData[i + 1]['dir']) is False:
                     mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] + testValue, 360)
                     # Apply the modification to all the dot notes of the pattern
                     notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n['b'] > mapSplitData[i]['b'] - 0.125 and
                              n['d'] == 8]
                     for n in notes:
                         n['dir'] = mapSplitData[i]['dir']
-                elif isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i - 1]['dir'], False) is False \
-                        and isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i + 1]['dir'],
-                                            False) is False:
+                elif isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i - 1]['dir']) is False \
+                        and isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i + 1]['dir']) is False:
                     mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
                     # Apply the modification to all the dot notes of the pattern
                     notes = [n for n in mapSplitData if mapSplitData[i]['b'] >= n['b'] > mapSplitData[i]['b'] - 0.125 and
@@ -492,7 +485,7 @@ def processSwing(mapSplitData: list):
                 if mapSplitData[f]['d'] != 8:
                     guideAngle = cut_direction_index[mapSplitData[f]['d']] + mapSplitData[f]['a']
                     break
-            if isSameDirection(cBlockA, guideAngle, False) is False:  # Fix angle is necessary
+            if isSameDirection(cBlockA, guideAngle) is False:  # Fix angle is necessary
                 cBlockA = reverseCutDirection(cBlockA)
             swingData[-1]['angle'] = cBlockA  # Modify last angle saved
             xtest = (swingData[-1]['entryPos'][0] - (
@@ -594,7 +587,7 @@ def parityPredictor(patternData: list, leftOrRight):
         testData2 = copy.deepcopy(patternData[p])
         for i in range(0, len(testData1)):  # Build Forehand TestData Build
             if i > 0:
-                if isSameDirection(testData1[i - 1]['angle'], testData1[i]['angle'], False) is True \
+                if isSameDirection(testData1[i - 1]['angle'], testData1[i]['angle']) is True \
                         or testData1[i]['bomb'] is True:
                     testData1[i]['reset'] = True
                     testData1[i]['forehand'] = testData1[i - 1]['forehand']
@@ -609,7 +602,7 @@ def parityPredictor(patternData: list, leftOrRight):
                 testData1[0]['forehand'] = True
         for i in range(0, len(testData2)):  # Build Banckhand TestData
             if i > 0:
-                if isSameDirection(testData2[i - 1]['angle'], testData2[i]['angle'], False) is True \
+                if isSameDirection(testData2[i - 1]['angle'], testData2[i]['angle']) is True \
                         or testData2[i]['bomb'] is True:
                     testData2[i]['reset'] = True
                     testData2[i]['forehand'] = testData2[i - 1]['forehand']
