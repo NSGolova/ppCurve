@@ -267,7 +267,8 @@ def fixPatternHead(mapSplitData: list):
 # Proceed to fix some possible issue afterward
 # Also detect bomb "reset"
 def flowDetector(mapSplitData: list, bombData: list):
-    mapSplitData = sorted(mapSplitData, key=lambda d: d['b'])
+    if len(mapSplitData) < 2:
+        return mapSplitData
     # This is the value that dot note will be tested to find a working flow
     testValue = 45
     # Find the first note
@@ -434,6 +435,8 @@ def flowDetector(mapSplitData: list, bombData: list):
 # Convert notes and patterns into swing data
 def processSwing(mapSplitData: list):
     swingData = []
+    if len(mapSplitData) < 2:
+        return swingData
     # First note
     swingData.append({'time': mapSplitData[0]['b'], 'angle': mapSplitData[0]['dir']})
     swingData[-1]['bomb'] = mapSplitData[0]['bomb']
@@ -575,6 +578,8 @@ def patternSplitter(swingData: list):
 # Apply best swing angle strain
 # Set if the swing is a reset (or bomb) or is forehand
 def parityPredictor(patternData: list, leftOrRight):
+    if len(swingData) < 2:
+        return []
     newPatternData = []
     for p in range(0, len(patternData)):
         testData1 = patternData[p]
@@ -632,6 +637,8 @@ def staminaCalc(data: list):
 
 
 def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
+    if len(swingData) < 2:
+        return [], []
     swingData[0]['pathStrain'] = 0  # First Note cannot really have any path strain
     testData = []
     for i in range(1, len(swingData)):
@@ -725,6 +732,8 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
 
 
 def diffToPass(swingData, bpm, hand, isuser=True):
+    if len(swingData) < 2:
+        return 0
     bps = bpm / 60
     # SSSpeed = 0         #Sum of Swing Speed
     # qSS = deque()       #List of swing speed
@@ -780,20 +789,51 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     RightSwingData = []
     rightVerbose = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
 
+    # Sort and find final beat
+    end = 0
+    if LeftMapData is not None and RightMapData is not None:
+        LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
+        RightMapData = sorted(RightMapData, key=lambda d: d['b'])
+        end = max(LeftMapData[-1]['b'], RightMapData[-1]['b'])
+    elif LeftMapData is not None:
+        LeftMapData = sorted(LeftMapData, key=lambda d: d['b'])
+        end = LeftMapData[-1]['b']
+    elif RightMapData is not None:
+        RightMapData = sorted(RightMapData, key=lambda d: d['b'])
+        end = RightMapData[-1]['b']
+
+    # Copy map if note count is under 50
     if LeftMapData is not None:
-        if len(LeftMapData) > 50:
-            LeftMapData = flowDetector(LeftMapData, bombData)
-            LeftSwingData = processSwing(LeftMapData)
-            LeftPatternData = patternSplitter(LeftSwingData)
-            LeftSwingData = parityPredictor(LeftPatternData, False)
-            LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
+        if len(LeftMapData) > 2:
+            while len(LeftMapData) < 50:
+                for i in range(0, len(LeftMapData)):
+                    note = copy.deepcopy(LeftMapData[i])
+                    note['b'] += end + 16
+                    LeftMapData.append(note)
+                end *= 2
+
     if RightMapData is not None:
-        if len(RightMapData) > 50:
-            RightMapData = flowDetector(RightMapData, bombData)
-            RightSwingData = processSwing(RightMapData)
-            RightPatternData = patternSplitter(RightSwingData)
-            RightSwingData = parityPredictor(RightPatternData, True)
-            RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
+        if len(RightMapData) > 2:
+            while len(RightMapData) < 50:
+                for i in range(0, len(RightMapData)):
+                    note = copy.deepcopy(RightMapData[i])
+                    note['b'] += end + 16
+                    RightMapData.append(note)
+                end *= 2
+
+    # Analyze the map
+    if LeftMapData is not None:
+        LeftMapData = flowDetector(LeftMapData, bombData)
+        LeftSwingData = processSwing(LeftMapData)
+        LeftPatternData = patternSplitter(LeftSwingData)
+        LeftSwingData = parityPredictor(LeftPatternData, False)
+        LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
+    if RightMapData is not None:
+        RightMapData = flowDetector(RightMapData, bombData)
+        RightSwingData = processSwing(RightMapData)
+        RightPatternData = patternSplitter(RightSwingData)
+        RightSwingData = parityPredictor(RightPatternData, True)
+        RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
 
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
