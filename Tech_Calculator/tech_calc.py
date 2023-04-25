@@ -482,11 +482,29 @@ def processSwing(mapSplitData: list):
             swingData[-1]['bomb'] = mapSplitData[i]['bomb']
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
         elif pattern:   # Modify the angle and entry or exit position, but doesn't create a new swing data
-            if mapSplitData[i]['d'] == 8:
-                swingData[-1]['angle'] = reverseCutDirection(
-                    mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360))
+            for f in range(i, 0, -1):  # Find pattern head
+                if mapSplitData[f]['b'] - mapSplitData[f - 1]['b'] >= 0.25:
+                    pBlockB = mapSplitData[f]['b']
+                    pBlockP = [mapSplitData[f]['x'], mapSplitData[f]['y']]
+                    break
+                if f == 1:
+                    pBlockB = mapSplitData[0]['b']
+                    pBlockP = [mapSplitData[0]['x'], mapSplitData[0]['y']]
+            # Find possible angle
+            cBlockA = mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360)
+            if len(swingData) > 1:  # Last swing angle to compare
+                guideAngle = mod((swingData[-2]['angle'] - 180), 360)
             else:
-                swingData[-1]['angle'] = cBlockA
+                guideAngle = 270
+            for f in range(i, 0, -1):
+                if mapSplitData[f]['b'] < pBlockB:
+                    break
+                if mapSplitData[f]['d'] != 8:
+                    guideAngle = cut_direction_index[mapSplitData[f]['d']] + mapSplitData[f]['a']
+                    break
+            if isSameDirection(cBlockA, guideAngle, False) is False:  # Fix angle is necessary
+                cBlockA = reverseCutDirection(cBlockA)
+            swingData[-1]['angle'] = cBlockA  # Modify last angle saved
             xtest = (swingData[-1]['entryPos'][0] - (
                     cBlockP[0] * 0.333333 - math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667)) * math.cos(
                 math.radians(cBlockA))
