@@ -278,18 +278,19 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     if mapSplitData[0]['d'] == 8:
         if mapSplitData[1]['d'] != 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] < 0.125:
             mapSplitData[0]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
-        # Use the first arrow found to reverse search the direction
-        tempList = [a for a in mapSplitData if a['d'] != 8]
-        if len(tempList) > 0:
-            found = tempList[0]
-            foundAngle = mod(cut_direction_index[found['d']] + found['a'], 360)
-            for i in range(mapSplitData.index(found), 0, -1):
-                if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.25:
-                    mapSplitData[0]['dir'] = reverseCutDirection(foundAngle)
-        elif mapSplitData[0]['y'] >= 2:  # Otherwise, use position instead
-            mapSplitData[0]['dir'] = 90  # Assume up for top row 
         else:
-            mapSplitData[0]['dir'] = 270  # Otherwise down
+            # Use the first arrow found to reverse search the direction
+            tempList = [a for a in mapSplitData if a['d'] != 8]
+            if len(tempList) > 0:
+                found = tempList[0]
+                foundAngle = mod(cut_direction_index[found['d']] + found['a'], 360)
+                for i in range(mapSplitData.index(found), 0, -1):
+                    if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.25:
+                        mapSplitData[0]['dir'] = reverseCutDirection(foundAngle)
+            elif mapSplitData[0]['y'] >= 2:  # Otherwise, use position instead
+                mapSplitData[0]['dir'] = 90  # Assume up for top row 
+            else:
+                mapSplitData[0]['dir'] = 270  # Otherwise down
     else:
         mapSplitData[0]['dir'] = mod(cut_direction_index[mapSplitData[0]['d']] + mapSplitData[0]['a'], 360)
     # Not considered
