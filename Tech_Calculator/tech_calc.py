@@ -322,7 +322,7 @@ def staminaCalc(data: list):
     swingDiffList = [temp['swingDiff'] for temp in data]
     swingDiffList.sort(reverse=True)
     averageDiff = average(swingDiffList[:int(len(swingDiffList) * 0.5)])
-    burstDiff = average(swingDiffList[:min(round(len(swingDiffList) / 8), 1)])
+    burstDiff = average(swingDiffList[:max(round(len(swingDiffList) / 8), 1)])
     if burstDiff == 0:
         return 0
     staminaRatio = averageDiff / burstDiff
