@@ -276,6 +276,8 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         testValue = -45
     # Find the first note
     if mapSplitData[0]['d'] == 8:
+        if mapSplitData[1]['d'] != 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] < 0.125:
+            mapSplitData[0]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
         # Use the first arrow found to reverse search the direction
         tempList = [a for a in mapSplitData if a['d'] != 8]
         if len(tempList) > 0:
