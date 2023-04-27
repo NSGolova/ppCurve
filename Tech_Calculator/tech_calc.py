@@ -179,7 +179,7 @@ def isSlider(prev, next, direction):
     elif 157.5 < direction <= 202.5:
         if prev['x'] > next['x']:
             return True
-    elif 0 <= direction < 22.5 or 337.5 < direction < 360:
+    elif 0 <= direction <= 22.5 or 337.5 < direction < 360:
         if prev['x'] < next['x']:
             return True
     elif 112.5 < direction <= 157.5:
