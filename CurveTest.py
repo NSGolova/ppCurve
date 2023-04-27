@@ -216,19 +216,19 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     playerACC = playerJSON['data'][i]['accuracy']
                     passRating = songStats['lackStats']['balanced_pass_diff']
                     tech = songStats['lackStats']['balanced_tech']
-                    
-                    passPP = 15.2 * math.exp(passRating**(1 / 2.62)) - 30
+
+                    passPP = 15.2 * math.exp(passRating ** (1 / 2.62)) - 30
 
                     if AIacc != 0:
-                        AI600Star = 15 / pointList1(AIacc) + 0.0022
+                        AI600Star = 15 / pointList1(AIacc + 0.0022)
                     else:
                         tinyTech = 0.0208 * tech + 1.1284  # https://www.desmos.com/calculator/yaqyyomsp9
-                        AI600Star = (-tinyTech**(-passRating) + 1) * 8 + 2 + 0.01 * tech * passRating
+                        AI600Star = (-tinyTech ** (-passRating)) + 1 * 8 + 2 + 0.01 * tech * passRating
 
-                    playerTechPP = math.exp(1.9 * playerACC) * 1.08 * AI600Star
-                    #playerTechPP = 1 / (1 + math.e**(-64 * (playerACC - 0.9))) * tech / (1 + math.e**(-16 * (tech - 0.5))) * 15 * AI600Star / max((0.3333 * passRating), 1)
+                    playerTechPP = math.exp(1.9 * playerACC) * 1.08 * tech
+                    # playerTechPP = 1 / (1 + math.e**(-64 * (playerACC - 0.9))) * tech / (1 + math.e**(-16 * (tech - 0.5))) * 15 * AI600Star / max((0.3333 * passRating), 1)
                     playerAccPP = pointList2(playerACC) * AI600Star * 34
-                    #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
+                    # playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
                     playerPP = passPP + playerAccPP + playerTechPP
                     
                     newStats.append({})
