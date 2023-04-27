@@ -482,11 +482,9 @@ def processSwing(mapSplitData: list):
         elif pattern:   # Modify the angle and entry or exit position, but doesn't create a new swing data
             for f in range(i, 0, -1):  # Find pattern head
                 if mapSplitData[f]['b'] - mapSplitData[f - 1]['b'] >= 0.25:
-                    pBlockB = mapSplitData[f]['b']
                     pBlockP = [mapSplitData[f]['x'], mapSplitData[f]['y']]
                     break
                 if f == 1:
-                    pBlockB = mapSplitData[0]['b']
                     pBlockP = [mapSplitData[0]['x'], mapSplitData[0]['y']]
             # Find possible angle
             cBlockA = mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360)
@@ -494,12 +492,6 @@ def processSwing(mapSplitData: list):
                 guideAngle = mod((swingData[-2]['angle'] - 180), 360)
             else:
                 guideAngle = 270
-            for f in range(i, 0, -1):
-                if mapSplitData[f]['b'] < pBlockB:
-                    break
-                if mapSplitData[f]['d'] != 8:
-                    guideAngle = mod(cut_direction_index[mapSplitData[f]['d']] + mapSplitData[f]['a'], 360)
-                    break
             if isSameDirection(cBlockA, guideAngle) is False:  # Fix angle is necessary
                 cBlockA = reverseCutDirection(cBlockA)
             swingData[-1]['angle'] = cBlockA  # Modify last angle saved
