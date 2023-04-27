@@ -10,9 +10,9 @@ playerTestList = [2769016623220259,76561198059961776,76561198072855418,765611980
     76561198225048252, 76561198110147969, 76561198081152434, 76561198204808809, 76561198072431907, 76561198989311828, 76561198960449289, 
     76561199104169308, 3225556157461414, 76561198410971373, 76561198153101808, 76561197995162898, 2169974796454690, 76561198166289091, 
     76561198285246326, 76561198802040781, 76561198110018904, 76561198044544317, 2092178757563532, 76561198311143750, 76561198157672038,
-    76561199050525271, 76561198272028078, 76561198027274310]
+    76561199050525271]
 
-# playerTestList = [76561198027274310]
+#playerTestList = [76561199050525271]
 
 def searchDiffIndex(diffNum, diffList):
     for f in range(0, len(diffList)):
@@ -31,60 +31,95 @@ def getKey(JSON):
     key = JSON['leaderboard']['song']['id']
     key = key.replace('x', '')
     return key
-def curveAccMultiAI(acc):
-    pointList = [[1.0, 7.424],[0.999, 6.241],[0.9975, 5.158],[0.995, 4.010],[0.9925, 3.241],[0.99, 2.700],[0.9875, 2.303],[0.985, 2.007],
-                 [0.9825, 1.786],[0.98, 1.618],[0.9775, 1.490],[0.975, 1.392],[0.9725, 1.315],[0.97, 1.256],[0.965, 1.167],[0.96, 1.101],
-                 [0.955, 1.047],[0.95, 1.000],[0.94, 0.919],[0.93, 0.847],[0.92, 0.786],[0.91, 0.734],[0.9, 0.692],[0.875, 0.606],
-                 [0.85, 0.537],[0.825, 0.480],[0.8, 0.429],[0.75, 0.345],[0.7, 0.286],[0.65, 0.246],[0.6, 0.217],[0.0, 0.000]]
-    # pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
-    # [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
-    # [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
-    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
-    # pointList = [[1,      5.5],[0.999,  4.6],[0.9975, 3.775],[0.995,  3.07],[0.9925, 2.6275],[0.99,   2.2975],[0.9875, 2.0275],[0.985,  1.825],
-    # [0.9825, 1.66],[0.98,   1.5325],[0.9775, 1.4275],[0.975,  1.3375],[0.9725, 1.2775],[0.97,   1.2325],[0.965,  1.15],[0.96,   1.0825],
-    # [0.955,  1.03375],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
-    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
-    # pointList = [[1,      4],[0.999,  3.4],[0.9975, 2.85],[0.995,  2.38],[0.9925, 2.085],[0.99,   1.865],[0.9875, 1.69],[0.985,  1.55],
-    # [0.9825, 1.44],[0.98,   1.355],[0.9775, 1.285],[0.975,  1.225],[0.9725, 1.185],[0.97,   1.155],[0.965,  1.1],[0.96,   1.055],
-    # [0.955,  1.0225],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
-    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
+def pointList1(acc):
+    pointList = [[1.0, 7.424],
+                [0.999, 6.241],
+                [0.9975, 5.158],
+                [0.995, 4.010],
+                [0.9925, 3.241],
+                [0.99, 2.700],
+                [0.9875, 2.303],
+                [0.985, 2.007],
+                [0.9825, 1.786],
+                [0.98, 1.618],
+                [0.9775, 1.490],
+                [0.975, 1.392],
+                [0.9725, 1.315],
+                [0.97, 1.256],
+                [0.965, 1.167],
+                [0.96, 1.101],
+                [0.955, 1.047],
+                [0.95, 1.000],
+                [0.94, 0.919],
+                [0.93, 0.847],
+                [0.92, 0.786],
+                [0.91, 0.734],
+                [0.9, 0.692],
+                [0.875, 0.606],
+                [0.85, 0.537],
+                [0.825, 0.480],
+                [0.8, 0.429],
+                [0.75, 0.345],
+                [0.7, 0.286],
+                [0.65, 0.246],
+                [0.6, 0.217],
+                [0.0, 0.000]]
+    for i in range(0, len(pointList)):
+        if pointList[i][0] <= acc:
+            break
+
+    if i == 0:
+        i = 1
+
+    middle_dis = (acc - pointList[i - 1][0]) / (pointList[i][0] - pointList[i - 1][0])
+
+    return pointList[i - 1][1] + middle_dis * (pointList[i][1] - pointList[i - 1][1])
+def pointList2(acc):
+    pointList = [[1.0, 7.424],
+        [0.999, 6.241],
+        [0.9975, 5.158],
+        [0.995, 4.010],
+        [0.9925, 3.241],
+        [0.99, 2.700],
+        [0.9875, 2.303],
+        [0.985, 2.007],
+        [0.9825, 1.786],
+        [0.98, 1.618],
+        [0.9775, 1.490],
+        [0.975, 1.392],
+        [0.9725, 1.315],
+        [0.97, 1.256],
+        [0.965, 1.167],
+        [0.96, 1.094],
+        [0.955, 1.039],
+        [0.95, 1.000],
+        [0.94, 0.931],
+        [0.93, 0.867],
+        [0.92, 0.813],
+        [0.91, 0.768],
+        [0.9, 0.729],
+        [0.875, 0.650],
+        [0.85, 0.581],
+        [0.825, 0.522],
+        [0.8, 0.473],
+        [0.75, 0.404],
+        [0.7, 0.345],
+        [0.65, 0.296],
+        [0.6, 0.256],
+        [0.0, 0.000]]
     for i in range(0, len(pointList)):
         if pointList[i][0] <= acc:
             break
     
     if i == 0:
         i = 1
-
-    middle_dis = (acc - pointList[i-1][0]) / (pointList[i][0] - pointList[i-1][0])
-
-    return pointList[i-1][1] + middle_dis * (pointList[i][1] - pointList[i-1][1])
-def curveAccMultiPlayer(acc):
-    pointList = [[1.0, 7.424],[0.999, 6.241],[0.9975, 5.158],[0.995, 4.010],[0.9925, 3.241],[0.99, 2.700],[0.9875, 2.303],[0.985, 2.007],
-                 [0.9825, 1.786],[0.98, 1.618],[0.9775, 1.490],[0.975, 1.392],[0.9725, 1.315],[0.97, 1.256],[0.965, 1.167],[0.96, 1.101],
-                 [0.955, 1.047],[0.95, 1.000],[0.94, 0.919],[0.93, 0.86],[0.92, 0.825],[0.91, 0.805],[0.9, 0.790],[0.875, 0.745],
-                 [0.85, 0.67],[0.825, 0.59],[0.8, 0.52],[0.75, 0.41],[0.7, 0.33],[0.65, 0.27],[0.6, 0.217],[0.0, 0.000]]
-    # pointList = [[1,      7],[0.999,  5.8],[0.9975, 4.7],[0.995,  3.76],[0.9925, 3.17],[0.99,   2.73],[0.9875, 2.38],[0.985,  2.1],
-    # [0.9825, 1.88],[0.98,   1.71],[0.9775, 1.57],[0.975,  1.45],[0.9725, 1.37],[0.97,   1.31],[0.965,  1.20],[0.96,   1.11],
-    # [0.955,  1.045],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
-    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
-    # pointList = [[1,      5.5],[0.999,  4.6],[0.9975, 3.775],[0.995,  3.07],[0.9925, 2.6275],[0.99,   2.2975],[0.9875, 2.0275],[0.985,  1.825],
-    # [0.9825, 1.66],[0.98,   1.5325],[0.9775, 1.4275],[0.975,  1.3375],[0.9725, 1.2775],[0.97,   1.2325],[0.965,  1.15],[0.96,   1.0825],
-    # [0.955,  1.03375],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
-    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
-    # pointList = [[1,      4],[0.999,  3.4],[0.9975, 2.85],[0.995,  2.38],[0.9925, 2.085],[0.99,   1.865],[0.9875, 1.69],[0.985,  1.55],
-    # [0.9825, 1.44],[0.98,   1.355],[0.9775, 1.285],[0.975,  1.225],[0.9725, 1.185],[0.97,   1.155],[0.965,  1.1],[0.96,   1.055],
-    # [0.955,  1.0225],[0.95,   1],[0.94,   0.94],[0.93,   0.885],[0.92,   0.835],[0.91,   0.79],[0.9,    0.75],[0.875,  0.655],
-    # [0.85,   0.57],[0.825,  0.51],[0.8,    0.47],[0.75,   0.40],[0.7,    0.34],[0.65,   0.29],[0.6,    0.25],[0.0,    0.0]]
-    for i in range(0, len(pointList)):
-        if pointList[i][0] <= acc:
-            break
     
-    if i == 0:
-        i = 1
-
     middle_dis = (acc - pointList[i-1][0]) / (pointList[i][0] - pointList[i-1][0])
 
     return pointList[i-1][1] + middle_dis * (pointList[i][1] - pointList[i-1][1])
+
+
+
 def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
     s = requests.Session()
     diffNum = dataJSON['leaderboard']['difficulty']['value']
@@ -106,6 +141,16 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
                 bpm = infoData['_beatsPerMinute'] * speed
                 AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
                 AiJSON['versionNum'] = versionNum
+                result = s.get(
+                     f"https://bs-replays-ai.azurewebsites.net/json/{hash}/{diffNum}/time-scale/{speed}")
+                if result.text == 'Not found':
+                     AiJSON['AIstats'] = {}
+                     AiJSON['AIstats']['balanced'] = 0
+                     AiJSON['AIstats']['expected_acc'] = 0
+                     AiJSON['AIstats']['passing_difficulty'] = 0
+                     # AiJSON['expected_acc'] = 1
+                else:
+                     AiJSON['AIstats'] = json.loads(result.text)
                 try:
                     os.mkdir(f"_AIcache/{hash}")
                 except:
@@ -132,7 +177,7 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
         if mapData != None:
             AiJSON['lackStats'] = tech_calc.mapCalculation(mapData, bpm, False, False)
         else:
-            AiJSON['lackStats'] = {'balanced_tech': 0, 'balanced_pass_diff': 0}
+            AiJSON['lackStats'] = {'tech': 0, 'balanced_pass_diff': 0}
         try:
             os.mkdir(f"_AIcache/{hash}")
         except:
@@ -141,6 +186,9 @@ def load_Song_Stats(dataJSON, speed, key, retest=False, versionNum=-1):
             json.dump(AiJSON, score_json, indent=4)
     
     return AiJSON
+
+
+
 def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
     s = requests.Session()
     songStats = {}
@@ -169,23 +217,19 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     passRating = songStats['lackStats']['balanced_pass_diff']
                     tech = songStats['lackStats']['balanced_tech']
                     
-                    passPP = passRating * 22.5
-                    AI600accPP = 600
-                    if AIacc != 0:
-                        AI600Star = AI600accPP / curveAccMultiAI(AIacc) / 50 * (-4**(-passRating-0.5) + 1)
-                    else:
-                        tinyTech = 0.208 * tech + 1.1284 # https://www.desmos.com/calculator/yaqyyomsp9
-                        AI600Star = (-tinyTech**(-passRating) + 1) * 8 + 2 + 0.1 * tech * passRating
+                    passPP = 15.2 * math.exp(passRating**(1 / 2.62)) - 30
 
-                    
-                    playerTechPP = 1 / (1 + math.e**(-32 * (playerACC - 0.925))) * tech / (1 + math.e**(-8 * (tech - 0.25))) * 12.5 * AI600Star / max((0.3333 * passRating), 2)
-                    playerAccPP = curveAccMultiPlayer(playerACC) * AI600Star * 27.5
-                    refinedAccPP = playerAccPP + playerTechPP
-                    bonusPP = math.sqrt(passPP**2 + refinedAccPP**2) * passPP * refinedAccPP / (passPP + refinedAccPP) / 250
-                   
-                    playerPP = bonusPP + refinedAccPP
-                    playerPP = playerPP * 1.1
-                    #playerPP = (playerPP + playerPP / (math.e**((-playerPP + 800) / 150))) * 1.4
+                    if AIacc != 0:
+                        AI600Star = 15 / pointList1(AIacc) + 0.0022
+                    else:
+                        tinyTech = 0.0208 * tech + 1.1284  # https://www.desmos.com/calculator/yaqyyomsp9
+                        AI600Star = (-tinyTech**(-passRating) + 1) * 8 + 2 + 0.01 * tech * passRating
+
+                    playerTechPP = math.exp(1.9 * playerACC) * 1.08 * AI600Star
+                    #playerTechPP = 1 / (1 + math.e**(-64 * (playerACC - 0.9))) * tech / (1 + math.e**(-16 * (tech - 0.5))) * 15 * AI600Star / max((0.3333 * passRating), 1)
+                    playerAccPP = pointList2(playerACC) * AI600Star * 34
+                    #playerAccPP = curveAccMulti(balancedAcc) * 175 * (-math.e**(-passRating-0.05) + 1)
+                    playerPP = passPP + playerAccPP + playerTechPP
                     
                     newStats.append({})
                     newStats[-1]['name'] = playerJSON['data'][i]['leaderboard']['song']['name']
@@ -199,7 +243,6 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
                     newStats[-1]['passPP'] = passPP
                     newStats[-1]['techPP'] = playerTechPP
                     newStats[-1]['accPP'] = playerAccPP
-                    newStats[-1]['bonusPP'] = bonusPP
                     newStats[-1]['playerPP'] = playerPP
                     newStats[-1]['600PassStar'] = AI600Star
 
@@ -207,7 +250,7 @@ def newPlayerStats(userID, scoreCount, retest=False, versionNum=-1):
     newStats = sorted(newStats, key=lambda x: x.get('playerPP', 0), reverse=True)
     playerName = playerName.replace("|", "")
 
-    filePath = f'_playerStats/{playerName}'
+    filePath = f'_PlayerStats/{playerName}'
 
     try:
         with open(f'{filePath}/dataNewPlayerPP.json', 'w') as data_json:
