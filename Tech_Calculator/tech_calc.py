@@ -436,7 +436,15 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         mapSplitData[-1]['dir'] = mapSplitData[len(mapSplitData) - 2]['dir']
     else:
         mapSplitData[-1]['dir'] = mod(cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a'], 360)
-    mapSplitData[-1]['bomb'] = False
+    bomb = [b for b in bombData if mapSplitData[-2]['b'] < b['b'] <= mapSplitData[-1]['b']
+            and mapSplitData[-1]['x'] == b['x']]
+    if len(bomb) > 0:
+        if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']):
+            mapSplitData[-1]['bomb'] = True
+        else:
+            mapSplitData[-1]['bomb'] = False
+    else:
+        mapSplitData[-1]['bomb'] = False
     return mapSplitData
 
 
