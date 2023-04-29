@@ -505,7 +505,7 @@ def processSwing(mapSplitData: list):
         cBlockB = mapSplitData[i]['b']
         cBlockA = mapSplitData[i]['dir']
         cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
-        if not mapSplitData[i]['pattern']:  # Non-pattern each have their own swing data
+        if not mapSplitData[i]['pattern'] or mapSplitData[i]['head'] is True:
             swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
         elif mapSplitData[i]['pattern']:  # Modify the angle and entry or exit position, doesn't create a new swing data
