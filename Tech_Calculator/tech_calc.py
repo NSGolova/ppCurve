@@ -295,7 +295,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
             tempList = [a for a in mapSplitData if a['d'] != 8]
             if len(tempList) > 0:
                 found = tempList[0]
-                foundAngle = reverseCutDirection(mod(cut_direction_index[found['d']] + found['a'], 360))
+                foundAngle = mod(cut_direction_index[found['d']] + found['a'], 360)
                 for i in range(mapSplitData.index(found), 0, -1):
                     if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.25:
                         mapSplitData[0]['dir'] = reverseCutDirection(foundAngle)
