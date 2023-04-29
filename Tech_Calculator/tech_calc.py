@@ -224,7 +224,8 @@ def handlePattern(mapSplitData: list):
                 # Check for a previous direction, get last known arrow and simulate flow
                 foundArrow = [a for a in mapSplitData if a['d'] != 8 and a['b'] < mapSplitData[n]['b']]
                 if len(foundArrow) > 0:
-                    direction = reverseCutDirection(mod(cut_direction_index[foundArrow[-1]['d']] + foundArrow[-1]['a'], 360))
+                    direction = reverseCutDirection(mod(cut_direction_index[foundArrow[-1]['d']] +
+                                                        foundArrow[-1]['a'], 360))
                     for i in range(mapSplitData.index(foundArrow[-1]), n):
                         if mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= 0.25:
                             direction = reverseCutDirection(direction)
@@ -280,6 +281,11 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         testValue = 45
     mapSplitData = sorted(mapSplitData, key=lambda d: d['b'])
     handlePattern(mapSplitData)
+    # Fill the list preemptively
+    for i in range(0, len(mapSplitData)):
+        mapSplitData[i]['bomb'] = False
+        mapSplitData[i]['pattern'] = False
+        mapSplitData[i]['head'] = False
     # Find the first note
     if mapSplitData[0]['d'] == 8:
         if mapSplitData[1]['d'] != 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
@@ -300,43 +306,75 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     else:
         mapSplitData[0]['dir'] = mod(cut_direction_index[mapSplitData[0]['d']] + mapSplitData[0]['a'], 360)
     # Find the second note
-    if mapSplitData[1]['d'] == 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] >= 0.125:
-        mapSplitData[1]['dir'] = reverseCutDirection(mapSplitData[0]['dir'])
-    elif mapSplitData[1]['d'] == 8:
-        mapSplitData[1]['dir'] = mapSplitData[0]['dir']
-    else:
-        mapSplitData[1]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
-    mapSplitData[0]['bomb'] = False
-    mapSplitData[1]['bomb'] = False
-    # Analyze the rest of the notes
-    for i in range(2, len(mapSplitData) - 1):
-        if mapSplitData[i]['d'] == 8:  # Dot note
+    if mapSplitData[1]['d'] == 8:
+        # Pattern?
+        if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
+                and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
+                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+            mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'])
+            if mapSplitData[0]['d'] == 8:
+                mapSplitData[0]['dir'] = mapSplitData[1]['dir']
+            mapSplitData[1]['pattern'] = True
+            mapSplitData[0]['pattern'] = True
+            mapSplitData[0]['head'] = True
+        else:
             # Bomb stuff
-            bomb = [b['y'] for b in bombData if mapSplitData[i - 1]['b'] < b['b'] <= mapSplitData[i]['b']
-                    and mapSplitData[i]['x'] == b['x']]
+            bomb = [b['y'] for b in bombData if mapSplitData[0]['b'] < b['b'] <= mapSplitData[1]['b']
+                    and mapSplitData[1]['x'] == b['x']]
             if len(bomb) > 0:  # Bomb found between the two notes, apply a direction based on bomb position
                 if bomb[-1] <= 0:
-                    mapSplitData[i]['dir'] = 270
+                    mapSplitData[1]['dir'] = 270
                 elif bomb[-1] == 1:
-                    if mapSplitData[i]['y'] == 0:
-                        mapSplitData[i]['dir'] = 90
+                    if mapSplitData[1]['y'] == 0:
+                        mapSplitData[1]['dir'] = 90
                     else:
-                        mapSplitData[i]['dir'] = 270
+                        mapSplitData[1]['dir'] = 270
                 elif bomb[-1] >= 2:
                     mapSplitData[i]['dir'] = 90
                 mapSplitData[i]['bomb'] = True
-                continue
             else:
-                mapSplitData[i]['bomb'] = False
+                mapSplitData[1]['dir'] = reverseCutDirection(mapSplitData[0]['dir'])
+    else:
+        if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
+            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
+                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+            mapSplitData[0]['head'] = True
+            mapSplitData[0]['pattern'] = True
+            mapSplitData[1]['pattern'] = True
+        mapSplitData[1]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
+    # Analyze the rest of the notes
+    for i in range(2, len(mapSplitData) - 1):
+        if mapSplitData[i]['d'] == 8:  # Dot note
             # If under 0.25 and placement matches, probably a pattern
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'])) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
-
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'])
-                mapSplitData[i - 1]['dir'] = mapSplitData[i]['dir']
+                if mapSplitData[i - 1]['d'] == 8:
+                    mapSplitData[i - 1]['dir'] = mapSplitData[i]['dir']
+                mapSplitData[i]['bomb'] = mapSplitData[i - 1]['bomb']
+                mapSplitData[i]['pattern'] = True
+                # Mark the head of the pattern
+                if mapSplitData[i - 1]['pattern'] is False:
+                    mapSplitData[i - 1]['head'] = True
+                    mapSplitData[i - 1]['pattern'] = True
                 continue
             else:
+                # Bomb stuff
+                bomb = [b['y'] for b in bombData if mapSplitData[i - 1]['b'] < b['b'] <= mapSplitData[i]['b']
+                        and mapSplitData[i]['x'] == b['x']]
+                if len(bomb) > 0:  # Bomb found between the two notes, apply a direction based on bomb position
+                    if bomb[-1] <= 0:
+                        mapSplitData[i]['dir'] = 270
+                    elif bomb[-1] == 1:
+                        if mapSplitData[i]['y'] == 0:
+                            mapSplitData[i]['dir'] = 90
+                        else:
+                            mapSplitData[i]['dir'] = 270
+                    elif bomb[-1] >= 2:
+                        mapSplitData[i]['dir'] = 90
+                    mapSplitData[i]['bomb'] = True
+                    continue
                 mapSplitData[i]['dir'] = reverseCutDirection(mapSplitData[i - 1]['dir'])
             # Check if the direction found work, otherwise check with the testValue
             if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']) is False:
@@ -372,14 +410,21 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                 if isSameDirection(lastDir, mapSplitData[i]['dir'] - testValue * 2) is False:
                     mapSplitData[i - 1]['dir'] = mod(mapSplitData[i - 1] - testValue, 360)
                     mapSplitData[i]['dir'] = mod(mapSplitData[i] - testValue * 2, 360)
-            # If it reached here, then the direction couldn't be handled properly
         else:  # Arrow note
             mapSplitData[i]['dir'] = mod(cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a'], 360)
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'])) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
-                mapSplitData[i - 1]['dir'] = mapSplitData[i]['dir']
-            mapSplitData[i]['bomb'] = False
+                mapSplitData[i]['pattern'] = True
+                mapSplitData[i]['bomb'] = mapSplitData[i - 1]['bomb']
+                if mapSplitData[i - 1]['pattern'] is False:
+                    mapSplitData[i - 1]['pattern'] = True
+                    mapSplitData[i - 1]['head'] = True
+            bomb = [b['y'] for b in bombData if mapSplitData[i - 1]['b'] < b['b'] <= mapSplitData[i]['b']
+                    and mapSplitData[i]['x'] == b['x']]
+            if len(bomb) > 0:  # Bomb found between the two notes
+                mapSplitData[i]['bomb'] = True
+                continue
     for i in range(2, len(mapSplitData) - 2):
         # Not a pattern and the note parity only work from before or after
         if mapSplitData[i]['d'] == 8 and mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.125:
@@ -396,25 +441,51 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                       isSameDirection(mapSplitData[i]['dir'] - testValue, mapSplitData[i + 1]['dir']) is False):
                     mapSplitData[i]['dir'] = mod(mapSplitData[i]['dir'] - testValue, 360)
     # Handle the last note
-    if mapSplitData[-1]['d'] == 8 and mapSplitData[-1]['b'] - mapSplitData[-2]['b'] >= 0.125:
-        mapSplitData[-1]['dir'] = reverseCutDirection(mapSplitData[len(mapSplitData) - 2]['dir'])
-    elif mapSplitData[-1]['d'] == 8:
-        bomb = [b for b in bombData if mapSplitData[-2]['b'] < b['b'] <= mapSplitData[-1]['b']
-                and mapSplitData[-1]['x'] == b['x']]
-        if len(bomb) > 0:
-            if bomb[-1] <= 0:
-                mapSplitData[-1]['dir'] = 270
-            elif bomb[-1] == 1:
-                if mapSplitData[-1]['y'] == 0:
-                    mapSplitData[-1]['dir'] = 90
-                else:
-                    mapSplitData[-1]['dir'] = 270
-            elif bomb[-1] >= 2:
-                mapSplitData[-1]['dir'] = 90
+    if mapSplitData[-1]['d'] == 8:
+        # Pattern?
+        if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
+            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'])) \
+                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
+            mapSplitData[-1]['dir'] = findAngleViaPosition(mapSplitData, len(mapSplitData) - 1,
+                                                           len(mapSplitData) - 2, mapSplitData[0]['dir'])
+            if mapSplitData[-2]['d'] == 8:
+                mapSplitData[-2]['dir'] = mapSplitData[1]['dir']
+            mapSplitData[-1]['pattern'] = True
+            # Mark the head
+            if mapSplitData[-2]['pattern'] is False:
+                mapSplitData[-2]['head'] = True
+                mapSplitData[-2]['pattern'] = True
         else:
-            mapSplitData[-1]['dir'] = mapSplitData[len(mapSplitData) - 2]['dir']
+            # Bomb stuff
+            bomb = [b['y'] for b in bombData if mapSplitData[-2]['b'] < b['b'] <= mapSplitData[-1]['b']
+                    and mapSplitData[-1]['x'] == b['x']]
+            if len(bomb) > 0:  # Bomb found between the two notes, apply a direction based on bomb position
+                if bomb[-1] <= 0:
+                    mapSplitData[-1]['dir'] = 270
+                elif bomb[-1] == 1:
+                    if mapSplitData[-1]['y'] == 0:
+                        mapSplitData[-1]['dir'] = 90
+                    else:
+                        mapSplitData[-1]['dir'] = 270
+                elif bomb[-1] >= 2:
+                    mapSplitData[-1]['dir'] = 90
+                mapSplitData[-1]['bomb'] = True
+            else:
+                mapSplitData[-1]['dir'] = reverseCutDirection(mapSplitData[-2]['dir'])
     else:
         mapSplitData[-1]['dir'] = mod(cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a'], 360)
+        if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
+            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'])) \
+                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
+            mapSplitData[-1]['pattern'] = True
+            mapSplitData[-1]['bomb'] = mapSplitData[-2]['bomb']
+            if mapSplitData[-2]['pattern'] is False:
+                mapSplitData[-2]['head'] = True
+                mapSplitData[-2]['pattern'] = True
+        bomb = [b['y'] for b in bombData if mapSplitData[-2]['b'] < b['b'] <= mapSplitData[-1]['b']
+                and mapSplitData[-1]['x'] == b['x']]
+        if len(bomb) > 0:  # Bomb found between the two notes, apply a direction based on bomb position
+            mapSplitData[-1]['bomb'] = True
     return mapSplitData
 
 
@@ -429,34 +500,20 @@ def processSwing(mapSplitData: list):
         calculateBaseEntryExit((mapSplitData[0]['x'], mapSplitData[0]['y']), mapSplitData[0]['dir'])
     for i in range(1, len(mapSplitData)):
         # Previous note
-        pBlockB = mapSplitData[i - 1]['b']
         pBlockA = swingData[-1]['angle']
-        pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
         # Current note
         cBlockB = mapSplitData[i]['b']
         cBlockA = mapSplitData[i]['dir']
         cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
-        # If under or equal to 0.25 and placement match
-        if cBlockB - pBlockB <= 0.25 and isSlider(mapSplitData[i - 1], mapSplitData[i], pBlockA):
-            pattern = True
-        # If it's under 0.125, assume pattern
-        elif cBlockB - pBlockB <= 0.125:
-            pattern = True
-        else:  # Not a pattern
-            pattern = False
-        if not pattern:  # Non-pattern each have their own swing data
+        if not mapSplitData[i]['pattern']:  # Non-pattern each have their own swing data
             swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-        elif pattern:  # Modify the angle and entry or exit position, but doesn't create a new swing data
-            # Find possible angle
+        elif mapSplitData[i]['pattern']:  # Modify the angle and entry or exit position, doesn't create a new swing data
+            # Find possible angle based on head placement
             for f in range(i, 0, -1):
-                if mapSplitData[f]['b'] - mapSplitData[f - 1]['b'] > 0.25:
+                if mapSplitData[f]['head'] is True:
                     cBlockA = findAngleViaPosition(mapSplitData, i, f, pBlockA)
                     break
-                if f == 1:
-                    cBlockA = findAngleViaPosition(mapSplitData, i, i - 1, pBlockA)
-            # Based on head placement
-
             if isSameDirection(cBlockA, pBlockA) is False:  # Fix angle is necessary
                 cBlockA = reverseCutDirection(cBlockA)
             swingData[-1]['angle'] = cBlockA  # Modify last angle saved
@@ -669,8 +726,10 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         # ypoints = [p[1] for p in points]
         # ax.plot(xvals, yvals, label='curve path')
         # ax.plot(xpoints, ypoints, "ro", label='Control Points')
-        # ax.plot(xvals[int(len(xvals) * pathLookback)], yvals[int(len(yvals) * pathLookback)], "bo", label='pathAngleStrain Start Point')
-        # ax.plot([xvals[int(len(xvals) * first) - 1], xvals[int(len(xvals) * last) - 1]], [yvals[int(len(yvals) * first) - 1], yvals[int(len(yvals) * last) - 1]], 'go', label='curveComplexity Scope')
+        # ax.plot(xvals[int(len(xvals) * pathLookback)], yvals[int(len(yvals) * pathLookback)],
+        # "bo", label='pathAngleStrain Start Point')
+        # ax.plot([xvals[int(len(xvals) * first) - 1], xvals[int(len(xvals) * last) - 1]],
+        # [yvals[int(len(yvals) * first) - 1], yvals[int(len(yvals) * last) - 1]], 'go', label='curveComplexity Scope')
         # ax.set_xticks(np.linspace(0,1.333333333,5))
         # ax.set_yticks(np.linspace(0,1,4))
         # #plt.xlim(0,1.3333333)
@@ -849,7 +908,8 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     # mirroredStaminaFactorLeft = staminaCalc(MirroredLeftSwingData)
     # mirroredStaminaFactorRight = staminaCalc(MirroredRightSwingData)
     # mirroredStaminaFactor = max(mirroredStaminaFactorLeft, mirroredStaminaFactorRight)
-    # mirrored_balanced_pass = max(mirroredPassDiffLeft * mirroredStaminaFactorLeft, mirroredPassDiffRight * mirroredStaminaFactorRight) * 0.9
+    #mirrored_balanced_pass = max(mirroredPassDiffLeft * mirroredStaminaFactorLeft,
+    #                             mirroredPassDiffRight * mirroredStaminaFactorRight) * 0.9
     # mirrored_balanced_tech = mirroredTech * (-1.4 ** (-mirroredPassNum) + 1) * 10
 
     if verbose:
