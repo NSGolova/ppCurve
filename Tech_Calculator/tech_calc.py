@@ -326,6 +326,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'])) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] < 0.125:
+
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, mapSplitData[i - 1]['dir'])
                 mapSplitData[i - 1]['dir'] = mapSplitData[i]['dir']
                 continue
@@ -473,14 +474,8 @@ def processSwing(mapSplitData: list):
             swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
         elif pattern:  # Modify the angle and entry or exit position, but doesn't create a new swing data
-            for f in range(i, 0, -1):  # Find pattern head
-                if mapSplitData[f]['b'] - mapSplitData[f - 1]['b'] >= 0.25:
-                    pBlockP = [mapSplitData[f]['x'], mapSplitData[f]['y']]
-                    break
-                if f == 1:
-                    pBlockP = [mapSplitData[0]['x'], mapSplitData[0]['y']]
             # Find possible angle
-            cBlockA = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1], pBlockP[0] - cBlockP[0])), 360))
+            cBlockA = findAngleViaPosition(mapSplitData, i, pBlockA)
             if isSameDirection(cBlockA, pBlockA) is False:  # Fix angle is necessary
                 cBlockA = reverseCutDirection(cBlockA)
             swingData[-1]['angle'] = cBlockA  # Modify last angle saved
@@ -718,10 +713,10 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     else:
         hand = 'Left Handed'
     if isuser:
-        print(f"Average {hand} hitAngleStrain {round(avehitAngleStrain, 5)}")
-        print(f"Average {hand} positionComplexity {round(avepositionComplexity, 5)}")
-        print(f"Average {hand} curveComplexityStrain {round(avecurveComplexityStrain, 5)}")
-        print(f"Average {hand} pathAngleStrain {round(avepathAngleStrain, 5)}")
+        print(f"Average {hand} hitAngleStrain {round(avehitAngleStrain, 2)}")
+        print(f"Average {hand} positionComplexity {round(avepositionComplexity, 2)}")
+        print(f"Average {hand} curveComplexityStrain {round(avecurveComplexityStrain, 2)}")
+        print(f"Average {hand} pathAngleStrain {round(avepathAngleStrain, 2)}")
     return swingData, returnDict
 
 
@@ -759,8 +754,8 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     if isuser:
         peakSS = [temp['swingSpeed'] for temp in data]
         peakSS.sort(reverse=True)
-        print(f"peak {hand} hand speed {round(average(peakSS[:int(len(peakSS) / 16)]), 5)}")
-        print(f"average {hand} hand stress {round(average([temp['stress'] for temp in data]), 5)}")
+        print(f"peak {hand} hand speed {round(average(peakSS[:int(len(peakSS) / 16)]), 2)}")
+        print(f"average {hand} hand stress {round(average([temp['stress'] for temp in data]), 2)}")
     if len(difficultyIndex) > 0:
         return max(difficultyIndex)
     else:
@@ -883,17 +878,17 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         returnDict = {'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass,
                       'low_note_nerf': low_note_nerf}
     if isuser:
-        print(f"Calculacted Tech = {round(tech, 5)}")  # Put Breakpoint here if you want to see
-        # print(f"Calculacted Tech (M) = {round(mirroredTech, 5)}")
-        print(f"Calculacted stamina factor = {round(staminaFactor, 5)}")
-        # print(f"Calculacted stamina factor (M) = {round(mirroredStaminaFactor, 5)}")
-        print(f"Calculated nerf = {round(low_note_nerf, 5)}")
-        print(f"Calculated pass diff = {round(passNum, 5)}")
-        # print(f"Calculated pass diff (M) = {round(mirroredPassNum, 5)}")
-        print(f"Calculated balanced tech = {round(balanced_tech, 5)}")
-        # print(f"Calculated balanced tech (M) = {round(mirrored_balanced_tech, 5)}")
-        print(f"Calculated balanced pass diff = {round(balanced_pass, 5)}")
-        # print(f"Calculated balanced pass diff (M) = {round(mirrored_balanced_pass, 5)}")
+        print(f"Calculacted Tech = {round(tech, 2)}")  # Put Breakpoint here if you want to see
+        # print(f"Calculacted Tech (M) = {round(mirroredTech, 2)}")
+        print(f"Calculacted stamina factor = {round(staminaFactor, 2)}")
+        # print(f"Calculacted stamina factor (M) = {round(mirroredStaminaFactor, 2)}")
+        print(f"Calculated nerf = {round(low_note_nerf, 2)}")
+        print(f"Calculated pass diff = {round(passNum, 2)}")
+        # print(f"Calculated pass diff (M) = {round(mirroredPassNum, 2)}")
+        print(f"Calculated balanced tech = {round(balanced_tech, 2)}")
+        # print(f"Calculated balanced tech (M) = {round(mirrored_balanced_tech, 2)}")
+        print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
+        # print(f"Calculated balanced pass diff (M) = {round(mirrored_balanced_pass, 2)}")
 
     return returnDict
 
