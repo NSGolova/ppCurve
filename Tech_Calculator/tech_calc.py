@@ -214,18 +214,26 @@ def findAngleViaPosition(mapSplitData: list, i, h, guideAngle):
     return currentAngle
 
 
+def simulateSwingPos(x, y, direction):
+    return x + 5 * math.cos(math.radians(direction)), y + 5 * math.sin(math.radians(direction))
+
+
 # Find pattern note if possible and then swap element for them to be in order
 def handlePattern(mapSplitData: list):
-    for n in range(0, len(mapSplitData) - 1):
+    length = 0
+    for n in range(0, len(mapSplitData) - 2):
+        if length > 0:
+            length = length - 1
+            continue
         if mapSplitData[n]['b'] == mapSplitData[n + 1]['b']:  # Pattern found
-            length = len([no for no in mapSplitData if no['b'] == mapSplitData[n]['b']])  # Get length of pattern
-            Arrow = [dir for dir in mapSplitData if dir['d'] != 8 and dir['b'] == mapSplitData[n]['b']]
+            length = len([no for no in mapSplitData if no['b'] == mapSplitData[n]['b']]) - 1  # Get length of pattern
+            Arrow = [dir for dir in mapSplitData if (dir['d'] != 8 and dir['b'] == mapSplitData[n]['b'])]
             if len(Arrow) == 0:  # Handle case if there's no direction available
                 # Check for a previous direction, get last known arrow and simulate flow
                 foundArrow = [a for a in mapSplitData if a['d'] != 8 and a['b'] < mapSplitData[n]['b']]
                 if len(foundArrow) > 0:
-                    direction = reverseCutDirection(mod(cut_direction_index[foundArrow[-1]['d']] +
-                                                        foundArrow[-1]['a'], 360))
+                    direction = mod(cut_direction_index[foundArrow[-1]['d']] +
+                                                        foundArrow[-1]['a'], 360)
                     for i in range(mapSplitData.index(foundArrow[-1]), n):
                         if mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= 0.25:
                             direction = reverseCutDirection(direction)
@@ -233,39 +241,15 @@ def handlePattern(mapSplitData: list):
                     continue
             else:
                 direction = mod(cut_direction_index[Arrow[-1]['d']] + Arrow[-1]['a'], 360)
-            for i in range(n, n + length):  # Loop from first to last note
-                if 67.5 < direction <= 112.5:
-                    if mapSplitData[n]['y'] > mapSplitData[n + 1]['y']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                elif 247.5 < direction <= 292.5:
-                    if mapSplitData[n]['y'] < mapSplitData[n + 1]['y']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                elif 157.5 < direction <= 202.5:
-                    if mapSplitData[n]['x'] < mapSplitData[n + 1]['x']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                elif 0 <= direction < 22.5 or 337.5 < direction < 360:
-                    if mapSplitData[n]['x'] > mapSplitData[n + 1]['x']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                elif 112.5 < direction <= 157.5:
-                    if mapSplitData[n]['x'] < mapSplitData[n + 1]['x']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                    elif mapSplitData[n]['y'] > mapSplitData[n + 1]['y']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                elif 22.5 < direction <= 67.5:
-                    if mapSplitData[n]['x'] > mapSplitData[n + 1]['x']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                    elif mapSplitData[n]['y'] > mapSplitData[n + 1]['y']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                elif 202.5 < direction <= 247.5:
-                    if mapSplitData[n]['x'] < mapSplitData[n + 1]['x']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                    elif mapSplitData[n]['y'] < mapSplitData[n + 1]['y']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                elif 292.5 < direction <= 337.5:
-                    if mapSplitData[n]['x'] > mapSplitData[n + 1]['x']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
-                    elif mapSplitData[n]['y'] < mapSplitData[n + 1]['y']:
-                        mapSplitData = swapPositions(mapSplitData, n, n + 1)
+            pos = simulateSwingPos(mapSplitData[n - 1]['x'], mapSplitData[n - 1]['y'], reverseCutDirection(direction))
+            distance = []
+            for i in range(n, n + length + 1):  # Find all the distance
+                distance.append(math.sqrt((pos[1] - mapSplitData[i]['y']) ** 2 + (pos[0] - mapSplitData[i]['x']) ** 2))
+            for i in range(0, len(distance)):
+                for j in range(n, n + length):  # We want the closest distance to be the head
+                    if distance[j - n + 1] < distance[j - n]:
+                        mapSplitData = swapPositions(mapSplitData, j, j + 1)
+                        distance = swapPositions(distance, j - n + 1, j - n)
     return mapSplitData
 
 
@@ -505,7 +489,7 @@ def processSwing(mapSplitData: list):
         cBlockB = mapSplitData[i]['b']
         cBlockA = mapSplitData[i]['dir']
         cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
-        if not mapSplitData[i]['pattern'] or mapSplitData[i]['head'] is True:
+        if mapSplitData[i]['pattern'] is False or mapSplitData[i]['head'] is True:
             swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
         elif mapSplitData[i]['pattern']:  # Modify the angle and entry or exit position, doesn't create a new swing data
@@ -927,31 +911,31 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         print(f"Calculated nerf = {round(low_note_nerf, 2)}")
         print(f"Calculated pass diff = {round(passNum, 2)}")
         # print(f"Calculated pass diff (M) = {round(mirroredPassNum, 2)}")
-        print(f"Calculated balanced tech = {round(balanced_tech, 2)}")
+        print(f"Calculated balanced tech = {round(balanced_tech, 4)}")
         # print(f"Calculated balanced tech (M) = {round(mirrored_balanced_tech, 2)}")
-        print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
+        print(f"Calculated balanced pass diff = {round(balanced_pass, 4)}")
         # print(f"Calculated balanced pass diff (M) = {round(mirrored_balanced_pass, 2)}")
 
     #for i in range(0, len(LeftSwingData)):
-    #    with open('C:/newleft.csv', 'a', encoding='UTF8', newline='') as f:
-    #        writer = csv.writer(f)
-    #        data = [LeftSwingData[i]['time'], LeftSwingData[i]['angle'], LeftSwingData[i]['entryPos'],
-    #                LeftSwingData[i]['exitPos'], LeftSwingData[i]['frequency'], LeftSwingData[i]['reset'],
-    #                LeftSwingData[i]['forehand'], LeftSwingData[i]['angleStrain'], LeftSwingData[i]['positionComplexity'],
-    #                LeftSwingData[i]['preDistance'], LeftSwingData[i]['curveComplexity'], LeftSwingData[i]['pathAngleStrain'],
-    #                LeftSwingData[i]['pathStrain'], LeftSwingData[i]['swingDiff']]
-    #        writer.writerow(data)
-    #for i in range(0, len(LeftSwingData)):
-    #    with open('C:/newright.csv', 'a', encoding='UTF8', newline='') as f:
-    #        writer = csv.writer(f)
-    #        data = [RightSwingData[i]['time'], RightSwingData[i]['angle'], RightSwingData[i]['entryPos'],
-    #                RightSwingData[i]['exitPos'], RightSwingData[i]['frequency'], RightSwingData[i]['reset'],
-    #                RightSwingData[i]['forehand'], RightSwingData[i]['angleStrain'],
-    #                RightSwingData[i]['positionComplexity'],
-    #                RightSwingData[i]['preDistance'], RightSwingData[i]['curveComplexity'],
-    #                RightSwingData[i]['pathAngleStrain'],
-    #                RightSwingData[i]['pathStrain'], RightSwingData[i]['swingDiff']]
-    #        writer.writerow(data)
+    #   with open('C:/newleft.csv', 'a', encoding='UTF8', newline='') as f:
+    #       writer = csv.writer(f)
+    #       data = [LeftSwingData[i]['time'], LeftSwingData[i]['angle'], LeftSwingData[i]['entryPos'],
+    #               LeftSwingData[i]['exitPos'], LeftSwingData[i]['frequency'], LeftSwingData[i]['reset'],
+    #               LeftSwingData[i]['forehand'], LeftSwingData[i]['angleStrain'], LeftSwingData[i]['positionComplexity'],
+    #               LeftSwingData[i]['preDistance'], LeftSwingData[i]['curveComplexity'], LeftSwingData[i]['pathAngleStrain'],
+    #               LeftSwingData[i]['pathStrain'], LeftSwingData[i]['swingDiff']]
+    #       writer.writerow(data)
+    # for i in range(0, len(RightSwingData)):
+    #     with open('C:/newright.csv', 'a', encoding='UTF8', newline='') as f:
+    #         writer = csv.writer(f)
+    #         data = [RightSwingData[i]['time'], RightSwingData[i]['angle'], RightSwingData[i]['entryPos'],
+    #                 RightSwingData[i]['exitPos'], RightSwingData[i]['frequency'], RightSwingData[i]['reset'],
+    #                 RightSwingData[i]['forehand'], RightSwingData[i]['angleStrain'],
+    #                 RightSwingData[i]['positionComplexity'],
+    #                 RightSwingData[i]['preDistance'], RightSwingData[i]['curveComplexity'],
+    #                 RightSwingData[i]['pathAngleStrain'],
+    #                 RightSwingData[i]['pathStrain'], RightSwingData[i]['swingDiff']]
+    #         writer.writerow(data)
 
     return returnDict
 
