@@ -230,18 +230,18 @@ def handlePattern(mapSplitData: list):
             Arrow = [dir for dir in mapSplitData if (dir['d'] != 8 and dir['b'] == mapSplitData[n]['b'])]
             if len(Arrow) == 0:  # Handle case if there's no direction available
                 # Check for a previous direction, get last known arrow and simulate flow
-                foundArrow = [a for a in mapSplitData if a['d'] != 8 and a['b'] < mapSplitData[n]['b']]
+                foundArrow = [a for a in mapSplitData if a['d'] != 8 and a['b'] > mapSplitData[n]['b']]
                 if len(foundArrow) > 0:
-                    direction = mod(cut_direction_index[foundArrow[-1]['d']] +
-                                                        foundArrow[-1]['a'], 360)
-                    for i in range(mapSplitData.index(foundArrow[-1]), n):
+                    direction = mod(cut_direction_index[foundArrow[0]['d']] +
+                                                        foundArrow[0]['a'], 360)
+                    for i in range(mapSplitData.index(foundArrow[0]), n, -1):
                         if mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= 0.25:
                             direction = reverseCutDirection(direction)
                 else:  # Can't find anything that could help, just going to ignore that pattern
                     continue
             else:
                 direction = mod(cut_direction_index[Arrow[-1]['d']] + Arrow[-1]['a'], 360)
-            pos = simulateSwingPos(mapSplitData[n - 1]['x'], mapSplitData[n - 1]['y'], reverseCutDirection(direction))
+            pos = simulateSwingPos(mapSplitData[n - 1]['x'], mapSplitData[n - 1]['y'], direction)
             distance = []
             for i in range(n, n + length + 1):  # Find all the distance
                 distance.append(math.sqrt((pos[1] - mapSplitData[i]['y']) ** 2 + (pos[0] - mapSplitData[i]['x']) ** 2))
