@@ -245,7 +245,7 @@ def handlePattern(mapSplitData: list):
                 else:  # Can't find anything that could help, just going to ignore that pattern
                     continue
             else:
-                direction = mod(cut_direction_index[Arrow[-1]['d']] + Arrow[-1]['a'], 360)
+                direction = reverseCutDirection(mod(cut_direction_index[Arrow[-1]['d']] + Arrow[-1]['a'], 360))
             pos = simulateSwingPos(mapSplitData[n - 1]['x'], mapSplitData[n - 1]['y'], direction)
             distance = []
             for i in range(n, n + length + 1):  # Find all the distance
