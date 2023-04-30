@@ -204,12 +204,17 @@ def isSlider(prev, next, direction):
 
 
 # Find next angle by using last known position, next position and a guide angle
-def findAngleViaPosition(mapSplitData: list, i, h, guideAngle):
-    pBlockP = [mapSplitData[h]['x'], mapSplitData[h]['y']]
+def findAngleViaPosition(mapSplitData: list, i, h, guideAngle, pattern):
+    if pattern is True:
+        pBlockP = [mapSplitData[h]['x'], mapSplitData[h]['y']]
+    else:
+        pBlockP = simulateSwingPos(mapSplitData[h]['x'], mapSplitData[h]['y'], guideAngle)
     cBlockP = [mapSplitData[i]['x'], mapSplitData[i]['y']]
     currentAngle = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1],
                                                                    pBlockP[0] - cBlockP[0])), 360))
-    if isSameDirection(currentAngle, guideAngle) is False:
+    if isSameDirection(currentAngle, guideAngle) is False and pattern is True:
+        currentAngle = reverseCutDirection(currentAngle)
+    if isSameDirection(currentAngle, guideAngle) is True and pattern is False:
         currentAngle = reverseCutDirection(currentAngle)
     return currentAngle
 
@@ -232,9 +237,9 @@ def handlePattern(mapSplitData: list):
                 # Check for a previous direction, get last known arrow and simulate flow
                 foundArrow = [a for a in mapSplitData if a['d'] != 8 and a['b'] > mapSplitData[n]['b']]
                 if len(foundArrow) > 0:
-                    direction = mod(cut_direction_index[foundArrow[0]['d']] +
-                                                        foundArrow[0]['a'], 360)
-                    for i in range(mapSplitData.index(foundArrow[0]), n, -1):
+                    direction = reverseCutDirection(mod(cut_direction_index[foundArrow[0]['d']] +
+                                                        foundArrow[0]['a'], 360))
+                    for i in range(mapSplitData.index(foundArrow[0]) - 1, n, -1):
                         if mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= 0.25:
                             direction = reverseCutDirection(direction)
                 else:  # Can't find anything that could help, just going to ignore that pattern
@@ -295,7 +300,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
                 and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
                 or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
-            mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'])
+            mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], True)
             if mapSplitData[0]['d'] == 8:
                 mapSplitData[0]['dir'] = mapSplitData[1]['dir']
             mapSplitData[1]['pattern'] = True
@@ -317,7 +322,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                     mapSplitData[i]['dir'] = 90
                 mapSplitData[i]['bomb'] = True
             else:
-                mapSplitData[1]['dir'] = reverseCutDirection(mapSplitData[0]['dir'])
+                mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], False)
     else:
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
             and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
@@ -333,7 +338,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'])) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
-                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'])
+                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'], True)
                 if mapSplitData[i - 1]['d'] == 8:
                     mapSplitData[i - 1]['dir'] = mapSplitData[i]['dir']
                 mapSplitData[i]['bomb'] = mapSplitData[i - 1]['bomb']
@@ -359,7 +364,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                         mapSplitData[i]['dir'] = 90
                     mapSplitData[i]['bomb'] = True
                     continue
-                mapSplitData[i]['dir'] = reverseCutDirection(mapSplitData[i - 1]['dir'])
+                mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'], False)
             # Check if the direction found work, otherwise check with the testValue
             if isSameDirection(mapSplitData[i - 1]['dir'], mapSplitData[i]['dir']) is False:
                 if mapSplitData[i + 1]['d'] != 8:
@@ -431,7 +436,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
             and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'])) \
                 or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
             mapSplitData[-1]['dir'] = findAngleViaPosition(mapSplitData, len(mapSplitData) - 1,
-                                                           len(mapSplitData) - 2, mapSplitData[0]['dir'])
+                                                           len(mapSplitData) - 2, mapSplitData[0]['dir'], True)
             if mapSplitData[-2]['d'] == 8:
                 mapSplitData[-2]['dir'] = mapSplitData[1]['dir']
             mapSplitData[-1]['pattern'] = True
@@ -496,7 +501,7 @@ def processSwing(mapSplitData: list):
             # Find possible angle based on head placement
             for f in range(i, 0, -1):
                 if mapSplitData[f]['head'] is True:
-                    cBlockA = findAngleViaPosition(mapSplitData, i, f, pBlockA)
+                    cBlockA = findAngleViaPosition(mapSplitData, i, f, pBlockA, True)
                     break
             if isSameDirection(cBlockA, pBlockA) is False:  # Fix angle is necessary
                 cBlockA = reverseCutDirection(cBlockA)
