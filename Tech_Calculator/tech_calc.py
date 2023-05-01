@@ -166,8 +166,6 @@ def toString(direction):
 
 # Try to find if placement match for slider
 def isSlider(prev, next, direction):
-    if prev['x'] == next['x'] and prev['y'] == next['y']:
-        return True
     if 67.5 < direction <= 112.5:
         if prev['y'] < next['y']:
             return True
@@ -815,7 +813,7 @@ def isInLinearPath(prev, curr, next):
 
 def detectLinear(data: list):
     if len(data) < 2:
-        return
+        return data
     data[0]['linear'] = True
     data[1]['linear'] = True
     for i in range(2, len(data)):
@@ -952,25 +950,25 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         # print(f"Calculated balanced pass diff (M) = {round(mirrored_balanced_pass, 2)}")
 
     # for i in range(0, len(LeftSwingData)):
-    #   with open('C:/newleft.csv', 'a', encoding='UTF8', newline='') as f:
-    #       writer = csv.writer(f)
-    #       data = [LeftSwingData[i]['time'], LeftSwingData[i]['angle'], LeftSwingData[i]['entryPos'],
-    #               LeftSwingData[i]['exitPos'], LeftSwingData[i]['frequency'], LeftSwingData[i]['reset'],
-    #               LeftSwingData[i]['forehand'], LeftSwingData[i]['angleStrain'], LeftSwingData[i]['positionComplexity'],
-    #               LeftSwingData[i]['preDistance'], LeftSwingData[i]['curveComplexity'], LeftSwingData[i]['pathAngleStrain'],
-    #               LeftSwingData[i]['pathStrain'], LeftSwingData[i]['swingDiff']]
+    #     with open('C:/newleft.csv', 'a', encoding='UTF8', newline='') as f:
+    #        writer = csv.writer(f)
+    #        data = [LeftSwingData[i]['time'], LeftSwingData[i]['angle'], LeftSwingData[i]['entryPos'],
+    #                LeftSwingData[i]['exitPos'], LeftSwingData[i]['frequency'], LeftSwingData[i]['reset'],
+    #                LeftSwingData[i]['forehand'], LeftSwingData[i]['angleStrain'], LeftSwingData[i]['positionComplexity'],
+    #                LeftSwingData[i]['preDistance'], LeftSwingData[i]['curveComplexity'], LeftSwingData[i]['pathAngleStrain'],
+    #                LeftSwingData[i]['pathStrain'], LeftSwingData[i]['swingDiff']]
     #       writer.writerow(data)
     # for i in range(0, len(RightSwingData)):
-    #      with open('C:/newright.csv', 'a', encoding='UTF8', newline='') as f:
-    #          writer = csv.writer(f)
-    #          data = [RightSwingData[i]['time'], RightSwingData[i]['angle'], RightSwingData[i]['entryPos'],
-    #                  RightSwingData[i]['exitPos'], RightSwingData[i]['frequency'], RightSwingData[i]['reset'],
-    #                  RightSwingData[i]['forehand'], RightSwingData[i]['angleStrain'],
-    #                  RightSwingData[i]['positionComplexity'],
-    #                  RightSwingData[i]['preDistance'], RightSwingData[i]['curveComplexity'],
-    #                  RightSwingData[i]['pathAngleStrain'],
-    #                  RightSwingData[i]['pathStrain'], RightSwingData[i]['swingDiff']]
-    #          writer.writerow(data)
+    #     with open('C:/newright.csv', 'a', encoding='UTF8', newline='') as f:
+    #         writer = csv.writer(f)
+    #         data = [RightSwingData[i]['time'], RightSwingData[i]['angle'], RightSwingData[i]['entryPos'],
+    #                 RightSwingData[i]['exitPos'], RightSwingData[i]['frequency'], RightSwingData[i]['reset'],
+    #                 RightSwingData[i]['forehand'], RightSwingData[i]['angleStrain'],
+    #                 RightSwingData[i]['positionComplexity'],
+    #                 RightSwingData[i]['preDistance'], RightSwingData[i]['curveComplexity'],
+    #                 RightSwingData[i]['pathAngleStrain'],
+    #                 RightSwingData[i]['pathStrain'], RightSwingData[i]['swingDiff']]
+    #         writer.writerow(data)
 
     return returnDict
 
