@@ -165,7 +165,10 @@ def toString(direction):
 
 
 # Try to find if placement match for slider
-def isSlider(prev, next, direction):
+def isSlider(prev, next, direction, dot):
+    if dot is True:
+        if prev['x'] == next['x'] and prev['y'] == next['y']:
+            return True
     if 67.5 < direction <= 112.5:
         if prev['y'] < next['y']:
             return True
@@ -296,7 +299,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     if mapSplitData[1]['d'] == 8:
         # Pattern?
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
-            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
+            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], True)) \
                 or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
             mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], True)
             if mapSplitData[0]['d'] == 8:
@@ -323,7 +326,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                 mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], False)
     else:
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
-            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
+            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], False)) \
                 or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
             mapSplitData[0]['head'] = True
             mapSplitData[0]['pattern'] = True
@@ -334,7 +337,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         if mapSplitData[i]['d'] == 8:  # Dot note
             # If under 0.25 and placement matches, probably a pattern
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
-                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'])) \
+                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], True)) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'], True)
                 if mapSplitData[i - 1]['d'] == 8:
@@ -400,7 +403,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         else:  # Arrow note
             mapSplitData[i]['dir'] = mod(cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a'], 360)
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
-                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'])) \
+                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], False)) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
                 mapSplitData[i]['pattern'] = True
                 mapSplitData[i]['bomb'] = mapSplitData[i - 1]['bomb']
@@ -431,7 +434,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     if mapSplitData[-1]['d'] == 8:
         # Pattern?
         if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
-            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'])) \
+            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], True)) \
                 or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
             mapSplitData[-1]['dir'] = findAngleViaPosition(mapSplitData, len(mapSplitData) - 1,
                                                            len(mapSplitData) - 2, mapSplitData[0]['dir'], True)
@@ -462,7 +465,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     else:
         mapSplitData[-1]['dir'] = mod(cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a'], 360)
         if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
-            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'])) \
+            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], False)) \
                 or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
             mapSplitData[-1]['pattern'] = True
             mapSplitData[-1]['bomb'] = mapSplitData[-2]['bomb']
@@ -639,7 +642,7 @@ def parityPredictor(patternData: list, leftOrRight):
         elif forehandTest > backhandTest:
             newPatternData += testData2
     for i in range(0, len(newPatternData)):
-        newPatternData[i]['angleStrain'] = swingAngleStrainCalc([newPatternData[i]], leftOrRight)
+        newPatternData[i]['angleStrain'] = swingAngleStrainCalc([newPatternData[i]], leftOrRight) * 2
     return newPatternData
 
 
@@ -685,9 +688,8 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
                 simHandPrePos = swingData[i - 1]['entryPos']
             else:  # Should technically never happen
                 simHandPrePos = simHandCurPos
-            positionDiff = math.sqrt(
-                (simHandCurPos[1] - simHandPrePos[1]) ** 2 + (simHandCurPos[0] - simHandPrePos[0]) ** 2)
-            positionComplexity = positionDiff ** 2
+            positionComplexity = math.sqrt(
+                (simHandCurPos[1] - simHandPrePos[1]) ** 2 + (simHandCurPos[0] - simHandPrePos[0]) ** 2) ** 2
         lengthOfList = len(angleChangeList) * 0.6
         if swingData[i]['reset']:  # If the pattern is a reset, look less far back
             pathLookback = 0.9
@@ -739,7 +741,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     else:
         hand = 'Left Handed'
     if isuser:
-        print(f"Average {hand} hitAngleStrain {round(avehitAngleStrain, 2)}")
+        print(f"Average {hand} angleStrain {round(avehitAngleStrain, 2)}")
         print(f"Average {hand} positionComplexity {round(avepositionComplexity, 2)}")
         print(f"Average {hand} curveComplexityStrain {round(avecurveComplexityStrain, 2)}")
         print(f"Average {hand} pathAngleStrain {round(avepathAngleStrain, 2)}")
@@ -768,7 +770,7 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
         data[-1]['hitDistance'] = math.sqrt((xHitDist ** 2) + (yHitDist ** 2))
         data[-1]['hitDiff'] = data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
-        data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
+        data[-1]['stress'] = (swingData[i]['angleStrain'] / 3 + swingData[i]['pathStrain']) * data[-1]['hitDiff']
         swingData[i]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4 ** (-data[-1]['swingSpeed']) + 1) * \
                                     (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
         if i > WINDOW:
@@ -791,8 +793,8 @@ def diffToPass(swingData, bpm, hand, isuser=True):
 def staminaCalc(data: list):
     swingDiffList = [temp['swingDiff'] for temp in data]
     swingDiffList.sort(reverse=True)
-    averageDiff = average(swingDiffList[:int(len(swingDiffList) * 0.5)])  # Half of the hardest diff swing
-    burstDiff = average(swingDiffList[:int(len(swingDiffList) * 0.2)])  # 1/5 hardest diff swing (peak)
+    averageDiff = average(swingDiffList[:int(len(swingDiffList) * 0.5)])
+    burstDiff = average(swingDiffList[:int(len(swingDiffList) * 0.25)])
     if burstDiff == 0:
         return 0
     staminaRatio = averageDiff / burstDiff
