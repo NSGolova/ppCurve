@@ -748,7 +748,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     return swingData, returnDict
 
 
-def diffToPass(swingData, bpm, hand, isuser=True):
+def diffToPass(swingData, WINDOW, bpm, hand, isuser=True):
     if len(swingData) == 0:
         return 0
     bps = bpm / 60
@@ -757,7 +757,6 @@ def diffToPass(swingData, bpm, hand, isuser=True):
     # SSStress = 0             #Sum of swing stress
     # qST = deque()       #List of swing stress
     qDIFF = deque()
-    WINDOW = 50  # Adjusts the smoothing window (how many swings get smoothed) (roughly 8 notes to fail)
     difficultyIndex = []
     data = []
     swingData[0]['swingDiff'] = 0
@@ -770,14 +769,14 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         yHitDist = swingData[i]['entryPos'][1] - swingData[i]['exitPos'][1]
         data[-1]['hitDistance'] = math.sqrt((xHitDist ** 2) + (yHitDist ** 2))
         data[-1]['hitDiff'] = data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
-        data[-1]['stress'] = (swingData[i]['angleStrain'] / 3 + swingData[i]['pathStrain']) * data[-1]['hitDiff']
+        data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
         swingData[i]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4 ** (-data[-1]['swingSpeed']) + 1) * \
                                     (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
         if i > WINDOW:
             qDIFF.popleft()
         qDIFF.append(swingData[i]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
-        windowDiff = average(tempList[:int(len(tempList) * 25 / WINDOW)], 25) * 0.80  # Top 15 notes out of the window
+        windowDiff = average(tempList, len(tempList)) * 0.80
         difficultyIndex.append(windowDiff)
     if isuser:
         peakSS = [temp['swingSpeed'] for temp in data]
@@ -905,13 +904,15 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     if len(SwingData) != 0:
         linear = len(LinearList) / len(SwingData)
         linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
-    passDiffLeft = diffToPass(LeftSwingData, bpm, 'left', isuser)
-    passDiffRight = diffToPass(RightSwingData, bpm, 'right', isuser)
+    passDiffLeft = diffToPass(LeftSwingData, 8, bpm, 'left', isuser)
+    passDiffLeft += diffToPass(LeftSwingData, 50, bpm, 'left', isuser)
+    passDiffRight = diffToPass(RightSwingData, 8, bpm, 'right', isuser)
+    passDiffRight += diffToPass(RightSwingData, 50, bpm, 'right', isuser)
     passNum = max(passDiffLeft, passDiffRight)
     staminaFactorLeft = staminaCalc(LeftSwingData)
     staminaFactorRight = staminaCalc(RightSwingData)
     staminaFactor = max(staminaFactorLeft, staminaFactorRight)
-    balanced_pass = max(passDiffLeft * staminaFactorLeft, passDiffRight * staminaFactorRight) * linear
+    balanced_pass = max(passDiffLeft / 2 * staminaFactorLeft, passDiffRight / 2 * staminaFactorRight) * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
     low_note_nerf = 1 / (
             1 + math.e ** (-0.6 * (len(SwingData) / 100 + 1.5)))  # https://www.desmos.com/calculator/povnzsoytj
