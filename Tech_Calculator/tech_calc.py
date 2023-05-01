@@ -298,7 +298,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     if mapSplitData[1]['d'] == 8:
         # Pattern?
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
-                and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
+            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'])) \
                 or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
             mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], True)
             if mapSplitData[0]['d'] == 8:
@@ -523,25 +523,23 @@ def processSwing(mapSplitData: list):
     return swingData
 
 
-def swingAngleStrainCalc(swingData: list, leftOrRight):  # False or 0 = Left, True or 1 = Right
+def swingAngleStrainCalc(swingData: list, leftOrRight):
     strainAmount = 0
-    # TODO calculate strain from angle based on left or right hand
     for i in range(0, len(swingData)):
-        if swingData[i][
-            'forehand']:  # The Formula firse calculates by first normalizing the angle difference (/180) then using
+        if swingData[i]['forehand']:
             if leftOrRight:
-                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - swingData[i][
-                    'angle']) - 180)) / 180) ** 2)  # Right Handed Forehand
+                strainAmount += 2 * (((180 - abs(
+                    abs(right_handed_angle_strain_forehand - swingData[i]['angle']) - 180)) / 180) ** 2)
             else:
-                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - swingData[i][
-                    'angle']) - 180)) / 180) ** 2)  # Left Handed Forehand
+                strainAmount += 2 * (((180 - abs(
+                    abs(left_handed_angle_strain_forehand - swingData[i]['angle']) - 180)) / 180) ** 2)
         else:
             if leftOrRight:
-                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - swingData[i][
-                    'angle']) - 180)) / 180) ** 2)  # Right Handed Backhand
+                strainAmount += 2 * (((180 - abs(
+                    abs(right_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180)) / 180) ** 2)
             else:
-                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - swingData[i][
-                    'angle']) - 180)) / 180) ** 2)  # Left Handed Backhand
+                strainAmount += 2 * (((180 - abs(
+                    abs(left_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180)) / 180) ** 2)
     return strainAmount * 2
 
 
@@ -551,18 +549,18 @@ def bezierAngleStrainCalc(angleData: list, forehand, leftOrRight):
         if forehand:
             if leftOrRight:
                 strainAmount += 2 * (((180 - abs(
-                    abs(right_handed_angle_strain_forehand - angleData[i]) - 180)) / 180) ** 2)  # Right Handed Forehand
+                    abs(right_handed_angle_strain_forehand - angleData[i]) - 180)) / 180) ** 2)
             else:
                 strainAmount += 2 * (((180 - abs(
-                    abs(left_handed_angle_strain_forehand - angleData[i]) - 180)) / 180) ** 2)  # Left Handed Forehand
+                    abs(left_handed_angle_strain_forehand - angleData[i]) - 180)) / 180) ** 2)
         else:
             if leftOrRight:
-                strainAmount += 2 * (((180 - abs(abs(right_handed_angle_strain_forehand - 180 - angleData[
-                    i]) - 180)) / 180) ** 2)  # Right Handed Backhand
+                strainAmount += 2 * (((180 - abs(
+                    abs(right_handed_angle_strain_forehand - 180 - angleData[i]) - 180)) / 180) ** 2)
             else:
-                strainAmount += 2 * (((180 - abs(abs(left_handed_angle_strain_forehand - 180 - angleData[
-                    i]) - 180)) / 180) ** 2)  # Left Handed Backhand
-    return strainAmount
+                strainAmount += 2 * (((180 - abs(
+                    abs(left_handed_angle_strain_forehand - 180 - angleData[i]) - 180)) / 180) ** 2)
+    return strainAmount * 2
 
 
 # Split the long list of dictionaries into smaller lists of patterns containing lists of dictionaries
@@ -692,7 +690,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
             positionDiff = math.sqrt(
                 (simHandCurPos[1] - simHandPrePos[1]) ** 2 + (simHandCurPos[0] - simHandPrePos[0]) ** 2)
             positionComplexity = positionDiff ** 2
-        lengthOfList = len(angleChangeList) * (1 - 0.4)  # 0.2 + (1 - 0.8) = 0.4
+        lengthOfList = len(angleChangeList) * 0.6
         if swingData[i]['reset']:  # If the pattern is a reset, look less far back
             pathLookback = 0.9
             first = 0.5
@@ -706,8 +704,8 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         lastIndex = int(len(angleChangeList) * last) - 1
         curveComplexity = abs((lengthOfList * average(angleChangeList[firstIndex:lastIndex]) - 180) / 180)
         # The more the angle difference changes from 180, the more complex the path, /180 to normalize between 0 - 1
-        pathAngleStrain = bezierAngleStrainCalc(angleList[pathLookbackIndex:], swingData[i]['forehand'],
-                                                leftOrRight) / len(angleList) * 2
+        pathAngleStrain = (bezierAngleStrainCalc(angleList[pathLookbackIndex:],
+                                                 swingData[i]['forehand'], leftOrRight) / len(angleList))
         # from matplotlib import pyplot as plt        #   Test
         # fig, ax = plt.subplots(figsize = (8, 5))
         # ax.plot(xvals, yvals, label='curve path')
@@ -773,8 +771,8 @@ def diffToPass(swingData, bpm, hand, isuser=True):
         data[-1]['hitDistance'] = math.sqrt((xHitDist ** 2) + (yHitDist ** 2))
         data[-1]['hitDiff'] = data[-1]['hitDistance'] / (data[-1]['hitDistance'] + 2) + 1
         data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
-        swingData[i]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4 ** (-data[-1]['swingSpeed']) + 1) * (
-                data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
+        swingData[i]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4 ** (-data[-1]['swingSpeed']) + 1) * \
+                                    (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
         if i > WINDOW:
             qDIFF.popleft()
         qDIFF.append(swingData[i]['swingDiff'])
@@ -800,8 +798,32 @@ def staminaCalc(data: list):
     if burstDiff == 0:
         return 0
     staminaRatio = averageDiff / burstDiff
-    return 1 / (20 + 4 ** (
-            -35 * (staminaRatio - 0.9))) + 0.9 + staminaRatio / 20  # https://www.desmos.com/calculator/gurvrlxgal
+    return 1 / (20 + 4 ** (-35 * (staminaRatio - 0.9))) + 0.9 + staminaRatio / 20
+
+
+def isInLinearPath(prev, curr, next):
+    dxc = next['entryPos'][0] - prev['entryPos'][0]
+    dyc = next['entryPos'][1] - prev['entryPos'][1]
+    dxl = curr['entryPos'][0] - prev['entryPos'][0]
+    dyl = curr['entryPos'][1] - prev['entryPos'][1]
+    cross = dxc * dyl - dyc * dxl
+    if cross == 0:
+        return True
+    else:
+        return False
+
+
+def detectLinear(data: list):
+    if len(data) < 2:
+        return
+    data[0]['linear'] = True
+    data[1]['linear'] = True
+    for i in range(2, len(data)):
+        if isInLinearPath(data[i - 2], data[i - 1], data[i]) is True:
+            data[i]['linear'] = True
+        else:
+            data[i]['linear'] = False
+    return data
 
 
 def combineAndSortList(array1, array2, key):
@@ -851,6 +873,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         LeftPatternData = patternSplitter(LeftSwingData)
         LeftSwingData = parityPredictor(LeftPatternData, False)
         LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
+        LeftSwingData = detectLinear(LeftSwingData)
         # Mirrored
         # if MirroredLeftData is not None:
         #    MirroredLeftData = flowDetector(MirroredLeftData, MirroredBombData, False)
@@ -864,6 +887,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         RightPatternData = patternSplitter(RightSwingData)
         RightSwingData = parityPredictor(RightPatternData, True)
         RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
+        RightSwingData = detectLinear(RightSwingData)
         # Mirrored
         # if MirroredRightData is not None:
         #    MirroredRightData = flowDetector(MirroredRightData, MirroredBombData, False)
@@ -876,13 +900,18 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
+    LinearList = [linear['linear'] for linear in SwingData if linear['linear'] is True]
+    linear = 1
+    if len(SwingData) != 0:
+        linear = len(LinearList) / len(SwingData)
+        linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
     passDiffLeft = diffToPass(LeftSwingData, bpm, 'left', isuser)
     passDiffRight = diffToPass(RightSwingData, bpm, 'right', isuser)
     passNum = max(passDiffLeft, passDiffRight)
     staminaFactorLeft = staminaCalc(LeftSwingData)
     staminaFactorRight = staminaCalc(RightSwingData)
     staminaFactor = max(staminaFactorLeft, staminaFactorRight)
-    balanced_pass = max(passDiffLeft * staminaFactorLeft, passDiffRight * staminaFactorRight)
+    balanced_pass = max(passDiffLeft * staminaFactorLeft, passDiffRight * staminaFactorRight) * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
     low_note_nerf = 1 / (
             1 + math.e ** (-0.6 * (len(SwingData) / 100 + 1.5)))  # https://www.desmos.com/calculator/povnzsoytj
@@ -897,7 +926,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     # mirroredStaminaFactorLeft = staminaCalc(MirroredLeftSwingData)
     # mirroredStaminaFactorRight = staminaCalc(MirroredRightSwingData)
     # mirroredStaminaFactor = max(mirroredStaminaFactorLeft, mirroredStaminaFactorRight)
-    #mirrored_balanced_pass = max(mirroredPassDiffLeft * mirroredStaminaFactorLeft,
+    # mirrored_balanced_pass = max(mirroredPassDiffLeft * mirroredStaminaFactorLeft,
     #                             mirroredPassDiffRight * mirroredStaminaFactorRight) * 0.9
     # mirrored_balanced_tech = mirroredTech * (-1.4 ** (-mirroredPassNum) + 1) * 10
 
@@ -913,15 +942,16 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         # print(f"Calculacted Tech (M) = {round(mirroredTech, 2)}")
         print(f"Calculacted stamina factor = {round(staminaFactor, 2)}")
         # print(f"Calculacted stamina factor (M) = {round(mirroredStaminaFactor, 2)}")
+        print(f"Calculated linear = {round(linear, 2)}")
         print(f"Calculated nerf = {round(low_note_nerf, 2)}")
         print(f"Calculated pass diff = {round(passNum, 2)}")
         # print(f"Calculated pass diff (M) = {round(mirroredPassNum, 2)}")
-        print(f"Calculated balanced tech = {round(balanced_tech, 4)}")
+        print(f"Calculated balanced tech = {round(balanced_tech, 2)}")
         # print(f"Calculated balanced tech (M) = {round(mirrored_balanced_tech, 2)}")
-        print(f"Calculated balanced pass diff = {round(balanced_pass, 4)}")
+        print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
         # print(f"Calculated balanced pass diff (M) = {round(mirrored_balanced_pass, 2)}")
 
-    #for i in range(0, len(LeftSwingData)):
+    # for i in range(0, len(LeftSwingData)):
     #   with open('C:/newleft.csv', 'a', encoding='UTF8', newline='') as f:
     #       writer = csv.writer(f)
     #       data = [LeftSwingData[i]['time'], LeftSwingData[i]['angle'], LeftSwingData[i]['entryPos'],
@@ -931,16 +961,16 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     #               LeftSwingData[i]['pathStrain'], LeftSwingData[i]['swingDiff']]
     #       writer.writerow(data)
     # for i in range(0, len(RightSwingData)):
-    #     with open('C:/newright.csv', 'a', encoding='UTF8', newline='') as f:
-    #         writer = csv.writer(f)
-    #         data = [RightSwingData[i]['time'], RightSwingData[i]['angle'], RightSwingData[i]['entryPos'],
-    #                 RightSwingData[i]['exitPos'], RightSwingData[i]['frequency'], RightSwingData[i]['reset'],
-    #                 RightSwingData[i]['forehand'], RightSwingData[i]['angleStrain'],
-    #                 RightSwingData[i]['positionComplexity'],
-    #                 RightSwingData[i]['preDistance'], RightSwingData[i]['curveComplexity'],
-    #                 RightSwingData[i]['pathAngleStrain'],
-    #                 RightSwingData[i]['pathStrain'], RightSwingData[i]['swingDiff']]
-    #         writer.writerow(data)
+    #      with open('C:/newright.csv', 'a', encoding='UTF8', newline='') as f:
+    #          writer = csv.writer(f)
+    #          data = [RightSwingData[i]['time'], RightSwingData[i]['angle'], RightSwingData[i]['entryPos'],
+    #                  RightSwingData[i]['exitPos'], RightSwingData[i]['frequency'], RightSwingData[i]['reset'],
+    #                  RightSwingData[i]['forehand'], RightSwingData[i]['angleStrain'],
+    #                  RightSwingData[i]['positionComplexity'],
+    #                  RightSwingData[i]['preDistance'], RightSwingData[i]['curveComplexity'],
+    #                  RightSwingData[i]['pathAngleStrain'],
+    #                  RightSwingData[i]['pathStrain'], RightSwingData[i]['swingDiff']]
+    #          writer.writerow(data)
 
     return returnDict
 
