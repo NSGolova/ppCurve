@@ -540,7 +540,7 @@ def swingAngleStrainCalc(swingData: list, leftOrRight):
             else:
                 strainAmount += 2 * (((180 - abs(
                     abs(left_handed_angle_strain_forehand - 180 - swingData[i]['angle']) - 180)) / 180) ** 2)
-    return strainAmount * 2
+    return strainAmount
 
 
 def bezierAngleStrainCalc(angleData: list, forehand, leftOrRight):
@@ -560,7 +560,7 @@ def bezierAngleStrainCalc(angleData: list, forehand, leftOrRight):
             else:
                 strainAmount += 2 * (((180 - abs(
                     abs(left_handed_angle_strain_forehand - 180 - angleData[i]) - 180)) / 180) ** 2)
-    return strainAmount * 2
+    return strainAmount
 
 
 # Split the long list of dictionaries into smaller lists of patterns containing lists of dictionaries
@@ -705,7 +705,7 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         curveComplexity = abs((lengthOfList * average(angleChangeList[firstIndex:lastIndex]) - 180) / 180)
         # The more the angle difference changes from 180, the more complex the path, /180 to normalize between 0 - 1
         pathAngleStrain = (bezierAngleStrainCalc(angleList[pathLookbackIndex:],
-                                                 swingData[i]['forehand'], leftOrRight) / len(angleList))
+                                                 swingData[i]['forehand'], leftOrRight) / len(angleList)) * 2
         # from matplotlib import pyplot as plt        #   Test
         # fig, ax = plt.subplots(figsize = (8, 5))
         # ax.plot(xvals, yvals, label='curve path')
