@@ -837,7 +837,10 @@ def diffToPass(swingData, WINDOW):
         averageDiff = average(difficultyIndex[:int(len(difficultyIndex) * 0.25)])
         burstDiff = average(difficultyIndex[:int(len(difficultyIndex) * 0.125)])
         if burstDiff == 0:
-            return 0
+            value = 0.5
+            if len(swingData) < WINDOW:
+                value = len(swingData) / WINDOW
+            return max(difficultyIndex) * value
         return max(difficultyIndex) * (averageDiff / burstDiff)
     else:
         return 0
@@ -941,8 +944,10 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     passDiffRightB = diffToPass(RightSwingData, windowB)
     weightA = 50
     weightB = 8
-    passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
-    passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
+    # passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
+    # passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
+    passDiffLeft = (passDiffLeftA + passDiffLeftB) / 2
+    passDiffRight = (passDiffRightA + passDiffRightB) / 2
     passNum = max(passDiffLeft, passDiffRight)
     balanced_pass = max(passDiffLeft, passDiffRight) * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
