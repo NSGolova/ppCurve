@@ -9,7 +9,6 @@ from scipy.special import comb
 import time
 import copy
 from collections import deque
-import csv
 
 
 # Works for both V2 and V3
@@ -770,23 +769,6 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
         # The more the angle difference changes from 180, the more complex the path, /180 to normalize between 0 - 1
         pathAngleStrain = (bezierAngleStrainCalc(angleList[pathLookbackIndex:],
                                                  swingData[i]['forehand'], leftOrRight) / len(angleList)) * 2
-        # from matplotlib import pyplot as plt        #   Test
-        # fig, ax = plt.subplots(figsize = (8, 5))
-        # ax.plot(xvals, yvals, label='curve path')
-        # xpoints = [p[0] for p in points]
-        # ypoints = [p[1] for p in points]
-        # ax.plot(xvals, yvals, label='curve path')
-        # ax.plot(xpoints, ypoints, "ro", label='Control Points')
-        # ax.plot(xvals[int(len(xvals) * pathLookback)], yvals[int(len(yvals) * pathLookback)],
-        # "bo", label='pathAngleStrain Start Point')
-        # ax.plot([xvals[int(len(xvals) * first) - 1], xvals[int(len(xvals) * last) - 1]],
-        # [yvals[int(len(yvals) * first) - 1], yvals[int(len(yvals) * last) - 1]], 'go', label='curveComplexity Scope')
-        # ax.set_xticks(np.linspace(0,1.333333333,5))
-        # ax.set_yticks(np.linspace(0,1,4))
-        # #plt.xlim(0,1.3333333)
-        # #plt.ylim(0,1)
-        # plt.legend()
-        # plt.show()
         testData.append({'curveComplexityStrain': curveComplexity, 'pathAngleStrain': pathAngleStrain,
                          'positionComplexity': positionComplexity})
         swingData[i]['positionComplexity'] = positionComplexity
@@ -815,10 +797,6 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
 def diffToPass(swingData, WINDOW, hand, isuser=True):
     if len(swingData) == 0:
         return 0
-    # SSSpeed = 0         #Sum of Swing Speed
-    # qSS = deque()       #List of swing speed
-    # SSStress = 0             #Sum of swing stress
-    # qST = deque()       #List of swing stress
     qDIFF = deque()
     difficultyIndex = []
     data = []
@@ -970,27 +948,6 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         print(f"Calculated pass diff = {round(passNum, 2)}")
         print(f"Calculated balanced tech = {round(balanced_tech, 2)}")
         print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
-
-    # for i in range(0, len(LeftSwingData)):
-    #     with open('C:/newleft.csv', 'a', encoding='UTF8', newline='') as f:
-    #        writer = csv.writer(f)
-    #        data = [LeftSwingData[i]['time'], LeftSwingData[i]['angle'], LeftSwingData[i]['entryPos'],
-    #                LeftSwingData[i]['exitPos'], LeftSwingData[i]['frequency'], LeftSwingData[i]['reset'],
-    #                LeftSwingData[i]['forehand'], LeftSwingData[i]['angleStrain'], LeftSwingData[i]['positionComplexity'],
-    #                LeftSwingData[i]['preDistance'], LeftSwingData[i]['curveComplexity'], LeftSwingData[i]['pathAngleStrain'],
-    #                LeftSwingData[i]['pathStrain'], LeftSwingData[i]['swingDiff']]
-    #       writer.writerow(data)
-    # for i in range(0, len(RightSwingData)):
-    #     with open('C:/newright.csv', 'a', encoding='UTF8', newline='') as f:
-    #         writer = csv.writer(f)
-    #         data = [RightSwingData[i]['time'], RightSwingData[i]['angle'], RightSwingData[i]['entryPos'],
-    #                 RightSwingData[i]['exitPos'], RightSwingData[i]['frequency'], RightSwingData[i]['reset'],
-    #                 RightSwingData[i]['forehand'], RightSwingData[i]['angleStrain'],
-    #                 RightSwingData[i]['positionComplexity'],
-    #                 RightSwingData[i]['preDistance'], RightSwingData[i]['curveComplexity'],
-    #                 RightSwingData[i]['pathAngleStrain'],
-    #                 RightSwingData[i]['pathStrain'], RightSwingData[i]['swingDiff']]
-    #         writer.writerow(data)
 
     return returnDict
 
