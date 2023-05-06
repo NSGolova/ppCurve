@@ -132,7 +132,7 @@ def V2_to_V3(V2mapData: dict):  # Convert V2 JSON to V3
         newMapData['obstacles'][-1]['d'] = V2mapData['_obstacles'][i]['_duration']
         newMapData['obstacles'][-1]['w'] = V2mapData['_obstacles'][i]['_width']
     for i in range(0, len(V2mapData['_events'])):
-        if newMapData['_events'][i]['_type'] == 100:
+        if V2mapData['_events'][i]['_type'] == 100:
             newMapData['bpmEvents'].append({'b': V2mapData['_events'][i]['_time']})
             newMapData['bpmEvents'][-1]['m'] = V2mapData['_events'][i]['_floatValue']
     return newMapData
