@@ -105,7 +105,7 @@ def handleBPM(mapData: list, bpm):
 
 def V2_to_V3(V2mapData: dict):  # Convert V2 JSON to V3
     newMapData = {'colorNotes': [], 'bombNotes': [],
-                  'obstacles': []}  # I have to initialize this beforehand or python gets grumpy
+                  'obstacles': [], 'bpmEvents': []}  # I have to initialize this beforehand or python gets grumpy
     for i in range(0, len(V2mapData['_notes'])):
         if V2mapData['_notes'][i]['_type'] in [0, 1]:
             # In V2, Bombs and Notes were stored in the same _type key. The "if" just separates them
@@ -131,6 +131,10 @@ def V2_to_V3(V2mapData: dict):  # Convert V2 JSON to V3
             newMapData['obstacles'][-1]['h'] = 5
         newMapData['obstacles'][-1]['d'] = V2mapData['_obstacles'][i]['_duration']
         newMapData['obstacles'][-1]['w'] = V2mapData['_obstacles'][i]['_width']
+    for i in range(0, len(V2mapData['_events'])):
+        if newMapData['_events'][i]['_type'] == 100:
+            newMapData['bpmEvents'].append({'b': V2mapData['_events'][i]['_time']})
+            newMapData['bpmEvents'][-1]['m'] = V2mapData['_events'][i]['_floatValue']
     return newMapData
 
 
