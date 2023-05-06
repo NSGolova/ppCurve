@@ -794,11 +794,9 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     return swingData, returnDict
 
 
-def diffToPass(swingData, WINDOW, hand, isuser=True):
+def calcSwingDiff(swingData, hand, isuser=True):
     if len(swingData) == 0:
-        return 0
-    qDIFF = deque()
-    difficultyIndex = []
+        return
     data = []
     swingData[0]['swingDiff'] = 0
     for i in range(1, len(swingData)):
@@ -814,17 +812,26 @@ def diffToPass(swingData, WINDOW, hand, isuser=True):
         data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
         swingData[i]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4 ** (-data[-1]['swingSpeed']) + 1) * \
                                     (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
-        if i > WINDOW:
-            qDIFF.popleft()
-        qDIFF.append(swingData[i]['swingDiff'])
-        tempList = sorted(qDIFF, reverse=True)
-        windowDiff = average(tempList) * 0.85
-        difficultyIndex.append(windowDiff)
     if isuser:
         peakSS = [temp['swingSpeed'] for temp in data]
         peakSS.sort(reverse=True)
         print(f"peak {hand} hand speed {round(average(peakSS[:int(len(peakSS) / 16)]), 2)}")
         print(f"average {hand} hand stress {round(average([temp['stress'] for temp in data]), 2)}")
+
+
+def diffToPass(swingData, WINDOW):
+    if len(swingData) == 0:
+        return 0
+    qDIFF = deque()
+    difficultyIndex = []
+    for i in range(0, len(swingData)):
+        if i > WINDOW:
+            qDIFF.popleft()
+        qDIFF.append(swingData[i]['swingDiff'])
+        tempList = sorted(qDIFF, reverse=True)
+        if i >= WINDOW:
+            windowDiff = average(tempList) * 0.85
+            difficultyIndex.append(windowDiff)
     if len(difficultyIndex) > 0:
         difficultyIndex = sorted(difficultyIndex, reverse=True)
         averageDiff = average(difficultyIndex[:int(len(difficultyIndex) * 0.25)])
@@ -922,12 +929,18 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     if len(SwingData) != 0:
         linear = len(LinearList) / len(SwingData)
         linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
-    passDiffLeft8 = diffToPass(LeftSwingData, 8, 'left', isuser)
-    passDiffLeft50 = diffToPass(LeftSwingData, 50, 'left', isuser)
-    passDiffRight8 = diffToPass(RightSwingData, 8, 'right', isuser)
-    passDiffRight50 = diffToPass(RightSwingData, 50, 'right', isuser)
-    passDiffLeft = (passDiffLeft50 + passDiffLeft8) / 2
-    passDiffRight = (passDiffRight50 + passDiffRight8) / 2
+    windowA = 50
+    windowB = 8
+    calcSwingDiff(LeftSwingData, 'left', isuser)
+    passDiffLeftA = diffToPass(LeftSwingData, windowA)
+    passDiffLeftB = diffToPass(LeftSwingData, windowB)
+    calcSwingDiff(RightSwingData, 'right', isuser)
+    passDiffRightA = diffToPass(RightSwingData, windowA)
+    passDiffRightB = diffToPass(RightSwingData, windowB)
+    weightA = 50
+    weightB = 8
+    passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
+    passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
     passNum = max(passDiffLeft, passDiffRight)
     balanced_pass = max(passDiffLeft, passDiffRight) * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
