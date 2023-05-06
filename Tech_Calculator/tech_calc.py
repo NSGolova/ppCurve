@@ -840,7 +840,7 @@ def diffToPass(swingData, WINDOW, hand, isuser=True):
             qDIFF.popleft()
         qDIFF.append(swingData[i]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
-        windowDiff = average(tempList) * 0.80
+        windowDiff = average(tempList) * 0.85
         difficultyIndex.append(windowDiff)
     if isuser:
         peakSS = [temp['swingSpeed'] for temp in data]
@@ -848,20 +848,12 @@ def diffToPass(swingData, WINDOW, hand, isuser=True):
         print(f"peak {hand} hand speed {round(average(peakSS[:int(len(peakSS) / 16)]), 2)}")
         print(f"average {hand} hand stress {round(average([temp['stress'] for temp in data]), 2)}")
     if len(difficultyIndex) > 0:
-        return max(difficultyIndex)
+        difficultyIndex = sorted(difficultyIndex, reverse=True)
+        averageDiff = average(difficultyIndex[:int(len(difficultyIndex) * 0.25)])
+        burstDiff = average(difficultyIndex[:int(len(difficultyIndex) * 0.125)])
+        return max(difficultyIndex) * (averageDiff / burstDiff)
     else:
         return 0
-
-
-def staminaCalc(data: list):
-    swingDiffList = [temp['swingDiff'] for temp in data]
-    swingDiffList.sort(reverse=True)
-    averageDiff = average(swingDiffList[:int(len(swingDiffList) * 0.5)])
-    burstDiff = average(swingDiffList[:int(len(swingDiffList) * 0.25)])
-    if burstDiff == 0:
-        return 0
-    staminaRatio = averageDiff / burstDiff
-    return 1 / (20 + 4 ** (-35 * (staminaRatio - 0.9))) + 0.9 + staminaRatio / 20
 
 
 def isInLinearPath(prev, curr, next):
@@ -922,9 +914,6 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     BombData = splitMapData(mapData, 2)
-    # MirroredRightData = mirrorMap(LeftMapData)
-    # MirroredLeftData = mirrorMap(RightMapData)
-    # MirroredBombData = mirrorBomb(BombData)
     LeftSwingData = []
     leftVerbose = {'hitAngleStrain': 0, 'positionComplexity': 0, 'curveComplexityStrain': 0, 'pathAngleStrain': 0}
     RightSwingData = []
@@ -938,13 +927,6 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         LeftSwingData = parityPredictor(LeftPatternData, False)
         LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
         LeftSwingData = detectLinear(LeftSwingData)
-        # Mirrored
-        # if MirroredLeftData is not None:
-        #    MirroredLeftData = flowDetector(MirroredLeftData, MirroredBombData, False)
-        #    MirroredLeftSwingData = processSwing(MirroredLeftData)
-        #    MirroredLeftPatternData = patternSplitter(MirroredLeftSwingData)
-        #    MirroredLeftSwingData = parityPredictor(MirroredLeftPatternData, False)
-        #    MirroredLeftSwingData, MirroredLeftVerbose = swingCurveCalc(MirroredLeftSwingData, False, isuser)
     if RightMapData is not None:
         RightMapData = flowDetector(RightMapData, BombData, True)
         RightSwingData = processSwing(RightMapData)
@@ -952,13 +934,6 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         RightSwingData = parityPredictor(RightPatternData, True)
         RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
         RightSwingData = detectLinear(RightSwingData)
-        # Mirrored
-        # if MirroredRightData is not None:
-        #    MirroredRightData = flowDetector(MirroredRightData, MirroredBombData, False)
-        #    MirroredRightSwingData = processSwing(MirroredRightData)
-        #    MirroredRightPatternData = patternSplitter(MirroredRightSwingData)
-        #    MirroredRightSwingData = parityPredictor(MirroredRightPatternData, False)
-        #    MirroredRightSwingData, MirroredRightVerbose = swingCurveCalc(MirroredRightSwingData, False, isuser)
 
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
@@ -969,32 +944,17 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     if len(SwingData) != 0:
         linear = len(LinearList) / len(SwingData)
         linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
-    passDiffLeft = diffToPass(LeftSwingData, 8, 'left', isuser)
-    passDiffLeft += diffToPass(LeftSwingData, 50, 'left', isuser)
-    passDiffRight = diffToPass(RightSwingData, 8, 'right', isuser)
-    passDiffRight += diffToPass(RightSwingData, 50, 'right', isuser)
+    passDiffLeft8 = diffToPass(LeftSwingData, 8, 'left', isuser)
+    passDiffLeft50 = diffToPass(LeftSwingData, 50, 'left', isuser)
+    passDiffRight8 = diffToPass(RightSwingData, 8, 'right', isuser)
+    passDiffRight50 = diffToPass(RightSwingData, 50, 'right', isuser)
+    passDiffLeft = (passDiffLeft50 + passDiffLeft8) / 2
+    passDiffRight = (passDiffRight50 + passDiffRight8) / 2
     passNum = max(passDiffLeft, passDiffRight)
-    staminaFactorLeft = staminaCalc(LeftSwingData)
-    staminaFactorRight = staminaCalc(RightSwingData)
-    staminaFactor = max(staminaFactorLeft, staminaFactorRight)
-    balanced_pass = max(passDiffLeft / 2 * staminaFactorLeft, passDiffRight / 2 * staminaFactorRight) * linear
+    balanced_pass = max(passDiffLeft, passDiffRight) * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
     low_note_nerf = 1 / (
             1 + math.e ** (-0.6 * (len(SwingData) / 100 + 1.5)))  # https://www.desmos.com/calculator/povnzsoytj
-
-    # MirroredSwingData = combineAndSortList(MirroredLeftSwingData, MirroredRightSwingData, 'time')
-    # MirroredStrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in MirroredSwingData]
-    # MirroredStrainList.sort()
-    # mirroredTech = average(MirroredStrainList[int(len(MirroredStrainList) * 0.25):])
-    # mirroredPassDiffLeft = diffToPass(MirroredLeftSwingData, 'left', isuser)
-    # mirroredPassDiffRight = diffToPass(MirroredRightSwingData, 'right', isuser)
-    # mirroredPassNum = max(mirroredPassDiffLeft, mirroredPassDiffRight) * 0.9
-    # mirroredStaminaFactorLeft = staminaCalc(MirroredLeftSwingData)
-    # mirroredStaminaFactorRight = staminaCalc(MirroredRightSwingData)
-    # mirroredStaminaFactor = max(mirroredStaminaFactorLeft, mirroredStaminaFactorRight)
-    # mirrored_balanced_pass = max(mirroredPassDiffLeft * mirroredStaminaFactorLeft,
-    #                             mirroredPassDiffRight * mirroredStaminaFactorRight) * 0.9
-    # mirrored_balanced_tech = mirroredTech * (-1.4 ** (-mirroredPassNum) + 1) * 10
 
     if verbose:
         returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech, 'passing_difficulty': passNum,
@@ -1005,17 +965,11 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
                       'low_note_nerf': low_note_nerf}
     if isuser:
         print(f"Calculacted Tech = {round(tech, 2)}")  # Put Breakpoint here if you want to see
-        # print(f"Calculacted Tech (M) = {round(mirroredTech, 2)}")
-        print(f"Calculacted stamina factor = {round(staminaFactor, 2)}")
-        # print(f"Calculacted stamina factor (M) = {round(mirroredStaminaFactor, 2)}")
         print(f"Calculated linear = {round(linear, 2)}")
         print(f"Calculated nerf = {round(low_note_nerf, 2)}")
         print(f"Calculated pass diff = {round(passNum, 2)}")
-        # print(f"Calculated pass diff (M) = {round(mirroredPassNum, 2)}")
         print(f"Calculated balanced tech = {round(balanced_tech, 2)}")
-        # print(f"Calculated balanced tech (M) = {round(mirrored_balanced_tech, 2)}")
         print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
-        # print(f"Calculated balanced pass diff (M) = {round(mirrored_balanced_pass, 2)}")
 
     # for i in range(0, len(LeftSwingData)):
     #     with open('C:/newleft.csv', 'a', encoding='UTF8', newline='') as f:
