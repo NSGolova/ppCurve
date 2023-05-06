@@ -70,7 +70,7 @@ def RawBeatFromTime(time, bpm):
 
 
 def findBPM(time):
-    lastChange = [bpm for bpm in bpmEvents if bpm['t'] < time]
+    lastChange = [bpm for bpm in bpmEvents if bpm['b'] < time]
     return lastChange[-1]['m']
 
 
