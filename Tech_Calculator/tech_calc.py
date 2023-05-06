@@ -836,6 +836,8 @@ def diffToPass(swingData, WINDOW):
         difficultyIndex = sorted(difficultyIndex, reverse=True)
         averageDiff = average(difficultyIndex[:int(len(difficultyIndex) * 0.25)])
         burstDiff = average(difficultyIndex[:int(len(difficultyIndex) * 0.125)])
+        if burstDiff == 0:
+            return 0
         return max(difficultyIndex) * (averageDiff / burstDiff)
     else:
         return 0
