@@ -830,7 +830,7 @@ def diffToPass(swingData, WINDOW):
         qDIFF.append(swingData[i]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
         if i >= WINDOW:
-            windowDiff = average(tempList) * 0.85
+            windowDiff = average(tempList) * 0.8
             difficultyIndex.append(windowDiff)
     if len(difficultyIndex) > 0:
         return max(difficultyIndex)
