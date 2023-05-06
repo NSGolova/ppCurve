@@ -43,6 +43,66 @@ def bezier_curve(points, nTimes=1000):
     return list(np.dot(xPoints, polynomial_array)), list(np.dot(yPoints, polynomial_array))
 
 
+def TimeFromBeat(beat):
+    if len(bpmEvents) == 0:
+        return RawTimeFromBeat(beat, BPM)
+    lastChange = [bpm for bpm in bpmEvents if bpm['b'] < beat]
+    return lastChange[-1]['t'] + RawTimeFromBeat(beat - lastChange[-1]['b'], lastChange[-1]['m'])
+
+
+def BeatFromTime(time):
+    if len(bpmEvents) == 0:
+        return RawBeatFromTime(time, BPM)
+    lastChange = [bpm for bpm in bpmEvents if bpm['t'] < time]
+    return lastChange[-1]['b'] + RawBeatFromTime(time - lastChange[-1]['t'], lastChange[-1]['m'])
+
+
+def RawTimeFromBeat(beat, bpm):
+    if bpm <= 0:
+        return 0
+    return beat / bpm * 60
+
+
+def RawBeatFromTime(time, bpm):
+    if bpm <= 0:
+        return 0
+    return time / 60 * bpm
+
+
+def findBPM(time):
+    lastChange = [bpm for bpm in bpmEvents if bpm['t'] < time]
+    return lastChange[-1]['m']
+
+
+def handleBPM(mapData: list, bpm):
+    global BPM
+    BPM = bpm
+    global bpmEvents
+    bpmEvents = []
+    if 'bpmEvents' not in mapData:
+        newEvent = {'b': -1, 'm': BPM, 't': -1}
+        bpmEvents.append(newEvent)
+        block = [block for block in mapData['colorNotes']]
+        for i in range(0, len(block)):
+            block[i]['t'] = TimeFromBeat(block[i]['b'])
+        return mapData
+    bpmEvents = [bpm for bpm in mapData['bpmEvents']]
+    newEvent = {'b': -1, 'm': BPM, 't': -1}
+    bpmEvents.append(newEvent)
+    if len(bpmEvents) > 1:
+        bpmEvents.sort(key=lambda b: b['b'])
+        currentTime = 0
+        for i in range(1, len(bpmEvents)):
+            currentTime += RawTimeFromBeat(bpmEvents[i]['b'] - bpmEvents[i - 1]['b'], bpmEvents[i - 1]['m'])
+            bpmEvents[i]['t'] = currentTime
+
+    block = [block for block in mapData['colorNotes']]
+    for i in range(0, len(block)):
+        block[i]['t'] = TimeFromBeat(block[i]['b'])
+
+    return mapData
+
+
 def V2_to_V3(V2mapData: dict):  # Convert V2 JSON to V3
     newMapData = {'colorNotes': [], 'bombNotes': [],
                   'obstacles': []}  # I have to initialize this beforehand or python gets grumpy
@@ -241,7 +301,7 @@ def handlePattern(mapSplitData: list):
                     direction = reverseCutDirection(mod(cut_direction_index[foundArrow[0]['d']] +
                                                         foundArrow[0]['a'], 360))
                     for i in range(mapSplitData.index(foundArrow[0]) - 1, n, -1):
-                        if mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= 0.25:
+                        if mapSplitData[i + 1]['b'] - mapSplitData[i]['b'] >= findBPM(mapSplitData[n]['t']) / 60 / 8:
                             direction = reverseCutDirection(direction)
                 else:  # Can't find anything that could help, just going to ignore that pattern
                     continue
@@ -278,7 +338,8 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         mapSplitData[i]['head'] = False
     # Find the first note
     if mapSplitData[0]['d'] == 8:
-        if mapSplitData[1]['d'] != 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+        if mapSplitData[1]['d'] != 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] <= findBPM(mapSplitData[0]['t']) \
+                / 60 / 16:
             mapSplitData[0]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
         else:
             # Use the first arrow found to reverse search the direction
@@ -287,7 +348,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                 found = tempList[0]
                 foundAngle = mod(cut_direction_index[found['d']] + found['a'], 360)
                 for i in range(mapSplitData.index(found), 0, -1):
-                    if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.25:
+                    if mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= findBPM(mapSplitData[i]['t']) / 60 / 8:
                         mapSplitData[0]['dir'] = reverseCutDirection(foundAngle)
             elif mapSplitData[0]['y'] >= 2:  # Otherwise, use position instead
                 mapSplitData[0]['dir'] = 90  # Assume up for top row
@@ -298,9 +359,9 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     # Find the second note
     if mapSplitData[1]['d'] == 8:
         # Pattern?
-        if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
+        if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= findBPM(mapSplitData[0]['t']) / 60 / 8
             and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], True)) \
-                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= findBPM(mapSplitData[0]['t']) / 60 / 16:
             mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], True)
             if mapSplitData[0]['d'] == 8:
                 mapSplitData[0]['dir'] = mapSplitData[1]['dir']
@@ -325,9 +386,9 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
             else:
                 mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], False)
     else:
-        if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
+        if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= findBPM(mapSplitData[0]['t']) / 60 / 8
             and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], False)) \
-                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= findBPM(mapSplitData[0]['t']) / 60 / 16:
             mapSplitData[0]['head'] = True
             mapSplitData[0]['pattern'] = True
             mapSplitData[1]['pattern'] = True
@@ -336,9 +397,9 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     for i in range(2, len(mapSplitData) - 1):
         if mapSplitData[i]['d'] == 8:  # Dot note
             # If under 0.25 and placement matches, probably a pattern
-            if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
+            if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= findBPM(mapSplitData[i]['t']) / 60 / 8
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], True)) \
-                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
+                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= findBPM(mapSplitData[i]['t']) / 60 / 16:
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'], True)
                 if mapSplitData[i - 1]['d'] == 8:
                     mapSplitData[i - 1]['dir'] = mapSplitData[i]['dir']
@@ -402,9 +463,9 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                     mapSplitData[i]['dir'] = mod(mapSplitData[i] - testValue * 2, 360)
         else:  # Arrow note
             mapSplitData[i]['dir'] = mod(cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a'], 360)
-            if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
+            if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= findBPM(mapSplitData[i]['t']) / 60 / 8
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], False)) \
-                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
+                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= findBPM(mapSplitData[i]['t']) / 60 / 16:
                 mapSplitData[i]['pattern'] = True
                 mapSplitData[i]['bomb'] = mapSplitData[i - 1]['bomb']
                 if mapSplitData[i - 1]['pattern'] is False:
@@ -417,7 +478,8 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                 continue
     for i in range(2, len(mapSplitData) - 2):
         # Not a pattern and the note parity only work from before or after
-        if mapSplitData[i]['d'] == 8 and mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= 0.125:
+        if mapSplitData[i]['d'] == 8 and mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] >= \
+                findBPM(mapSplitData[i]['t']) / 60 / 16:
             if (isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir']) is True and mapSplitData[i]['bomb']
                 is False and isSameDirection(mapSplitData[i]['dir'], mapSplitData[i + 1]['dir']) is False) or \
                     ((isSameDirection(mapSplitData[i]['dir'], mapSplitData[i - 1]['dir']) is False and
@@ -433,9 +495,9 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     # Handle the last note
     if mapSplitData[-1]['d'] == 8:
         # Pattern?
-        if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
+        if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= findBPM(mapSplitData[-1]['t']) / 60 / 8
             and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], True)) \
-                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
+                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= findBPM(mapSplitData[-1]['t']) / 60 / 16:
             mapSplitData[-1]['dir'] = findAngleViaPosition(mapSplitData, len(mapSplitData) - 1,
                                                            len(mapSplitData) - 2, mapSplitData[0]['dir'], True)
             if mapSplitData[-2]['d'] == 8:
@@ -464,9 +526,9 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
                 mapSplitData[-1]['dir'] = reverseCutDirection(mapSplitData[-2]['dir'])
     else:
         mapSplitData[-1]['dir'] = mod(cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a'], 360)
-        if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
+        if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= findBPM(mapSplitData[-1]['t']) / 60 / 8
             and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], False)) \
-                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
+                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= findBPM(mapSplitData[-1]['t']) / 60 / 16:
             mapSplitData[-1]['pattern'] = True
             mapSplitData[-1]['bomb'] = mapSplitData[-2]['bomb']
             if mapSplitData[-2]['pattern'] is False:
@@ -748,10 +810,9 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     return swingData, returnDict
 
 
-def diffToPass(swingData, WINDOW, bpm, hand, isuser=True):
+def diffToPass(swingData, WINDOW, hand, isuser=True):
     if len(swingData) == 0:
         return 0
-    bps = bpm / 60
     # SSSpeed = 0         #Sum of Swing Speed
     # qSS = deque()       #List of swing speed
     # SSStress = 0             #Sum of swing stress
@@ -761,6 +822,7 @@ def diffToPass(swingData, WINDOW, bpm, hand, isuser=True):
     data = []
     swingData[0]['swingDiff'] = 0
     for i in range(1, len(swingData)):
+        bps = findBPM(swingData[i]['time']) / 60
         distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
         data.append({'swingSpeed': swingData[i]['frequency'] * distanceDiff * bps})
         if swingData[i]['reset']:
@@ -776,7 +838,7 @@ def diffToPass(swingData, WINDOW, bpm, hand, isuser=True):
             qDIFF.popleft()
         qDIFF.append(swingData[i]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
-        windowDiff = average(tempList, len(tempList)) * 0.80
+        windowDiff = average(tempList) * 0.80
         difficultyIndex.append(windowDiff)
     if isuser:
         peakSS = [temp['swingSpeed'] for temp in data]
@@ -854,6 +916,7 @@ def mirrorBomb(bombData: list):
 
 
 def techOperations(mapData, bpm, isuser=True, verbose=True):
+    mapData = handleBPM(mapData, bpm)
     LeftMapData = splitMapData(mapData, 0)
     RightMapData = splitMapData(mapData, 1)
     BombData = splitMapData(mapData, 2)
@@ -904,10 +967,10 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     if len(SwingData) != 0:
         linear = len(LinearList) / len(SwingData)
         linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
-    passDiffLeft = diffToPass(LeftSwingData, 8, bpm, 'left', isuser)
-    passDiffLeft += diffToPass(LeftSwingData, 50, bpm, 'left', isuser)
-    passDiffRight = diffToPass(RightSwingData, 8, bpm, 'right', isuser)
-    passDiffRight += diffToPass(RightSwingData, 50, bpm, 'right', isuser)
+    passDiffLeft = diffToPass(LeftSwingData, 8, 'left', isuser)
+    passDiffLeft += diffToPass(LeftSwingData, 50, 'left', isuser)
+    passDiffRight = diffToPass(RightSwingData, 8, 'right', isuser)
+    passDiffRight += diffToPass(RightSwingData, 50, 'right', isuser)
     passNum = max(passDiffLeft, passDiffRight)
     staminaFactorLeft = staminaCalc(LeftSwingData)
     staminaFactorRight = staminaCalc(RightSwingData)
@@ -921,8 +984,8 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     # MirroredStrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in MirroredSwingData]
     # MirroredStrainList.sort()
     # mirroredTech = average(MirroredStrainList[int(len(MirroredStrainList) * 0.25):])
-    # mirroredPassDiffLeft = diffToPass(MirroredLeftSwingData, bpm, 'left', isuser)
-    # mirroredPassDiffRight = diffToPass(MirroredRightSwingData, bpm, 'right', isuser)
+    # mirroredPassDiffLeft = diffToPass(MirroredLeftSwingData, 'left', isuser)
+    # mirroredPassDiffRight = diffToPass(MirroredRightSwingData, 'right', isuser)
     # mirroredPassNum = max(mirroredPassDiffLeft, mirroredPassDiffRight) * 0.9
     # mirroredStaminaFactorLeft = staminaCalc(MirroredLeftSwingData)
     # mirroredStaminaFactorRight = staminaCalc(MirroredRightSwingData)
