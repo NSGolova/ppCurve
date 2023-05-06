@@ -69,8 +69,8 @@ def RawBeatFromTime(time, bpm):
     return time / 60 * bpm
 
 
-def findBPM(time):
-    lastChange = [bpm for bpm in bpmEvents if bpm['b'] < time]
+def findBPM(beat):
+    lastChange = [bpm for bpm in bpmEvents if bpm['b'] < beat]
     return lastChange[-1]['m']
 
 
