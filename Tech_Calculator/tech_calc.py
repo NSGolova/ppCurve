@@ -934,12 +934,10 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     calcSwingDiff(RightSwingData, 'right', isuser)
     passDiffRightA = diffToPass(RightSwingData, windowA)
     passDiffRightB = diffToPass(RightSwingData, windowB)
-    weightA = 50
-    weightB = 8
-    # passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
-    # passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
-    passDiffLeft = (passDiffLeftA + passDiffLeftB) / 2
-    passDiffRight = (passDiffRightA + passDiffRightB) / 2
+    weightA = 1
+    weightB = 1
+    passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
+    passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
     passNum = max(passDiffLeft, passDiffRight)
     balanced_pass = max(passDiffLeft, passDiffRight) * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
