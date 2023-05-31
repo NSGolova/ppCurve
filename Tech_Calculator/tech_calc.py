@@ -928,11 +928,17 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     #     linear = len(LinearList) / len(SwingData)
     #     linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
     calcSwingDiff(LeftSwingData, 'left', isuser)
-    passDiffLeft = diffToPass(LeftSwingData, 30000)
+    passDiffLeftA = diffToPass(LeftSwingData, 3000)
+    passDiffLeftB = diffToPass(LeftSwingData, 10000)
     calcSwingDiff(RightSwingData, 'right', isuser)
-    passDiffRight = diffToPass(RightSwingData, 30000)
+    passDiffRightA = diffToPass(RightSwingData, 3000)
+    passDiffRightB = diffToPass(RightSwingData, 10000)
+    weightA = 1
+    weightB = 3
+    passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
+    passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
     passNum = max(passDiffLeft, passDiffRight)
-    balanced_pass = max(passDiffLeft, passDiffRight) * 1.089  # * linear
+    balanced_pass = max(passDiffLeft, passDiffRight)  # * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
     low_note_nerf = 1 / (
             1 + math.e ** (-0.6 * (len(SwingData) / 100 + 1.5)))  # https://www.desmos.com/calculator/povnzsoytj
