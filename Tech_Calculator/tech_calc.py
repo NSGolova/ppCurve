@@ -801,6 +801,7 @@ def calcSwingDiff(swingData, hand, isuser=True):
     swingData[0]['swingDiff'] = 0
     for i in range(1, len(swingData)):
         bps = findBPM(swingData[i]['time']) / 60
+        swingData[i]['time'] = 60000 / (bps * 60) * swingData[i]['time']
         distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
         data.append({'swingSpeed': swingData[i]['frequency'] * distanceDiff * bps})
         if swingData[i]['reset']:
@@ -822,16 +823,16 @@ def calcSwingDiff(swingData, hand, isuser=True):
 def diffToPass(swingData, WINDOW):
     if len(swingData) == 0:
         return 0
-    qDIFF = deque()
+    qDIFF = []
     difficultyIndex = []
-    for i in range(0, len(swingData)):
-        if i > WINDOW:
-            qDIFF.popleft()
-        qDIFF.append(swingData[i]['swingDiff'])
+    for i in range(0, int(swingData[-1]['time']), 1000):
+        for j in range(0, len(swingData)):
+            if i <= swingData[j]['time'] <= i + WINDOW:  # Included
+                qDIFF.append(swingData[j]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
-        if i >= WINDOW:
-            windowDiff = average(tempList) * 0.8
-            difficultyIndex.append(windowDiff)
+        windowDiff = average(tempList) * 0.8
+        difficultyIndex.append(windowDiff)
+        qDIFF = []
     if len(difficultyIndex) > 0:
         return max(difficultyIndex)
     else:
@@ -926,20 +927,12 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     # if len(SwingData) != 0:
     #     linear = len(LinearList) / len(SwingData)
     #     linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
-    windowA = 50
-    windowB = 8
     calcSwingDiff(LeftSwingData, 'left', isuser)
-    passDiffLeftA = diffToPass(LeftSwingData, windowA)
-    passDiffLeftB = diffToPass(LeftSwingData, windowB)
+    passDiffLeft = diffToPass(LeftSwingData, 30000)
     calcSwingDiff(RightSwingData, 'right', isuser)
-    passDiffRightA = diffToPass(RightSwingData, windowA)
-    passDiffRightB = diffToPass(RightSwingData, windowB)
-    weightA = 8
-    weightB = 1
-    passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
-    passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
+    passDiffRight = diffToPass(RightSwingData, 30000)
     passNum = max(passDiffLeft, passDiffRight)
-    balanced_pass = max(passDiffLeft, passDiffRight)  # * linear
+    balanced_pass = max(passDiffLeft, passDiffRight) * 1.089  # * linear
     balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
     low_note_nerf = 1 / (
             1 + math.e ** (-0.6 * (len(SwingData) / 100 + 1.5)))  # https://www.desmos.com/calculator/povnzsoytj
