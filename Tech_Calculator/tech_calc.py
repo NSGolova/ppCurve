@@ -801,7 +801,6 @@ def calcSwingDiff(swingData, hand, isuser=True):
     swingData[0]['swingDiff'] = 0
     for i in range(1, len(swingData)):
         bps = findBPM(swingData[i]['time']) / 60
-        swingData[i]['time'] = 60000 / (bps * 60) * swingData[i]['time']
         distanceDiff = swingData[i]['preDistance'] / (swingData[i]['preDistance'] + 3) + 1
         data.append({'swingSpeed': swingData[i]['frequency'] * distanceDiff * bps})
         if swingData[i]['reset']:
@@ -823,16 +822,16 @@ def calcSwingDiff(swingData, hand, isuser=True):
 def diffToPass(swingData, WINDOW):
     if len(swingData) == 0:
         return 0
-    qDIFF = []
+    qDIFF = deque()
     difficultyIndex = []
-    for i in range(0, int(swingData[-1]['time']), 1000):
-        for j in range(0, len(swingData)):
-            if i <= swingData[j]['time'] <= i + WINDOW:  # Included
-                qDIFF.append(swingData[j]['swingDiff'])
+    for i in range(0, len(swingData)):
+        if i > WINDOW:
+            qDIFF.popleft()
+        qDIFF.append(swingData[i]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
-        windowDiff = average(tempList) * 0.8
-        difficultyIndex.append(windowDiff)
-        qDIFF = []
+        if i >= WINDOW:
+            windowDiff = average(tempList) * 0.8
+            difficultyIndex.append(windowDiff)
     if len(difficultyIndex) > 0:
         return max(difficultyIndex)
     else:
@@ -928,13 +927,13 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     #     linear = len(LinearList) / len(SwingData)
     #     linear = linear ** (2 * linear + 1) / (linear - 3 ** (2 * linear)) + 1.05
     calcSwingDiff(LeftSwingData, 'left', isuser)
-    passDiffLeftA = diffToPass(LeftSwingData, 3000)
-    passDiffLeftB = diffToPass(LeftSwingData, 10000)
+    passDiffLeftA = diffToPass(LeftSwingData, 8)
+    passDiffLeftB = diffToPass(LeftSwingData, 16)
     calcSwingDiff(RightSwingData, 'right', isuser)
-    passDiffRightA = diffToPass(RightSwingData, 3000)
-    passDiffRightB = diffToPass(RightSwingData, 10000)
+    passDiffRightA = diffToPass(RightSwingData, 8)
+    passDiffRightB = diffToPass(RightSwingData, 16)
     weightA = 1
-    weightB = 3
+    weightB = 6
     passDiffLeft = (weightA * passDiffLeftA + weightB * passDiffLeftB) / (weightA + weightB)
     passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
     passNum = max(passDiffLeft, passDiffRight)
