@@ -939,7 +939,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     passDiffRight = (weightA * passDiffRightA + weightB * passDiffRightB) / (weightA + weightB)
     passNum = max(passDiffLeft, passDiffRight)
     balanced_pass = max(passDiffLeft, passDiffRight)  # * linear
-    balanced_tech = tech * (-1.4 ** (-passNum) + 1) * 10
+    balanced_tech = tech * (-1.4 ** (-passNum) + 1)
     low_note_nerf = 1 / (
             1 + math.e ** (-0.6 * (len(SwingData) / 100 + 1.5)))  # https://www.desmos.com/calculator/povnzsoytj
 
