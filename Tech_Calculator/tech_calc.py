@@ -42,30 +42,30 @@ def bezier_curve(points, nTimes=1000):
     return list(np.dot(xPoints, polynomial_array)), list(np.dot(yPoints, polynomial_array))
 
 
-def TimeFromBeat(beat):
-    if len(bpmEvents) == 0:
-        return RawTimeFromBeat(beat, BPM)
-    lastChange = [bpm for bpm in bpmEvents if bpm['b'] < beat]
-    return lastChange[-1]['t'] + RawTimeFromBeat(beat - lastChange[-1]['b'], lastChange[-1]['m'])
-
-
-def BeatFromTime(time):
-    if len(bpmEvents) == 0:
-        return RawBeatFromTime(time, BPM)
-    lastChange = [bpm for bpm in bpmEvents if bpm['t'] < time]
-    return lastChange[-1]['b'] + RawBeatFromTime(time - lastChange[-1]['t'], lastChange[-1]['m'])
-
-
-def RawTimeFromBeat(beat, bpm):
-    if bpm <= 0:
-        return 0
-    return beat / bpm * 60
-
-
-def RawBeatFromTime(time, bpm):
-    if bpm <= 0:
-        return 0
-    return time / 60 * bpm
+# def TimeFromBeat(beat):
+#     if len(bpmEvents) == 0:
+#         return RawTimeFromBeat(beat, BPM)
+#     lastChange = [bpm for bpm in bpmEvents if bpm['b'] < beat]
+#     return lastChange[-1]['t'] + RawTimeFromBeat(beat - lastChange[-1]['b'], lastChange[-1]['m'])
+#
+#
+# def BeatFromTime(time):
+#     if len(bpmEvents) == 0:
+#         return RawBeatFromTime(time, BPM)
+#     lastChange = [bpm for bpm in bpmEvents if bpm['t'] < time]
+#     return lastChange[-1]['b'] + RawBeatFromTime(time - lastChange[-1]['t'], lastChange[-1]['m'])
+#
+#
+# def RawTimeFromBeat(beat, bpm):
+#     if bpm <= 0:
+#         return 0
+#     return beat / bpm * 60
+#
+#
+# def RawBeatFromTime(time, bpm):
+#     if bpm <= 0:
+#         return 0
+#     return time / 60 * bpm
 
 
 def findBPM(beat):
@@ -81,23 +81,25 @@ def handleBPM(mapData: list, bpm):
     if 'bpmEvents' not in mapData:
         newEvent = {'b': -1, 'm': BPM, 't': -1}
         bpmEvents.append(newEvent)
-        block = [block for block in mapData['colorNotes']]
-        for i in range(0, len(block)):
-            block[i]['t'] = TimeFromBeat(block[i]['b'])
+        #  block = [block for block in mapData['colorNotes']]
+        #  for i in range(0, len(block)):
+        #      block[i]['t'] = TimeFromBeat(block[i]['b'])
         return mapData
     bpmEvents = [bpm for bpm in mapData['bpmEvents']]
     newEvent = {'b': -1, 'm': BPM, 't': -1}
     bpmEvents.append(newEvent)
     if len(bpmEvents) > 1:
         bpmEvents.sort(key=lambda b: b['b'])
-        currentTime = 0
-        for i in range(1, len(bpmEvents)):
-            currentTime += RawTimeFromBeat(bpmEvents[i]['b'] - bpmEvents[i - 1]['b'], bpmEvents[i - 1]['m'])
-            bpmEvents[i]['t'] = currentTime
+        # CM derp moment
+        bpmEvents = [bpmEvent for bpmEvent in bpmEvents if bpmEvent['m'] != 100000]
+        #  currentTime = 0
+        #  for i in range(1, len(bpmEvents)):
+        #      currentTime += RawTimeFromBeat(bpmEvents[i]['b'] - bpmEvents[i - 1]['b'], bpmEvents[i - 1]['m'])
+        #      bpmEvents[i]['t'] = currentTime
 
     block = [block for block in mapData['colorNotes']]
-    for i in range(0, len(block)):
-        block[i]['t'] = TimeFromBeat(block[i]['b'])
+    #  for i in range(0, len(block)):
+    #      block[i]['t'] = TimeFromBeat(block[i]['b'])
 
     return mapData
 
@@ -872,26 +874,26 @@ def combineAndSortList(array1, array2, key):
     return combinedArray
 
 
-line_mirror_index = [3, 2, 1, 0]
-cut_mirror_index = [0, 1, 3, 2, 5, 4, 7, 6, 8]
-color_mirror_index = [1, 0, 2]
-
-
-def mirrorMap(mapData: list):
-    newData = copy.deepcopy(mapData)
-    for i in range(0, len(newData)):
-        newData[i]['x'] = line_mirror_index[newData[i]['x']]
-        newData[i]['d'] = cut_mirror_index[newData[i]['d']]
-        newData[i]['c'] = color_mirror_index[newData[i]['c']]
-        newData[i]['a'] = -newData[i]['a']
-    return newData
-
-
-def mirrorBomb(bombData: list):
-    newData = copy.deepcopy(bombData)
-    for i in range(0, len(newData)):
-        newData[i]['x'] = line_mirror_index[newData[i]['x']]
-    return newData
+# line_mirror_index = [3, 2, 1, 0]
+# cut_mirror_index = [0, 1, 3, 2, 5, 4, 7, 6, 8]
+# color_mirror_index = [1, 0, 2]
+#
+#
+# def mirrorMap(mapData: list):
+#     newData = copy.deepcopy(mapData)
+#     for i in range(0, len(newData)):
+#         newData[i]['x'] = line_mirror_index[newData[i]['x']]
+#         newData[i]['d'] = cut_mirror_index[newData[i]['d']]
+#         newData[i]['c'] = color_mirror_index[newData[i]['c']]
+#         newData[i]['a'] = -newData[i]['a']
+#     return newData
+#
+#
+# def mirrorBomb(bombData: list):
+#     newData = copy.deepcopy(bombData)
+#     for i in range(0, len(newData)):
+#         newData[i]['x'] = line_mirror_index[newData[i]['x']]
+#     return newData
 
 
 def techOperations(mapData, bpm, isuser=True, verbose=True):
