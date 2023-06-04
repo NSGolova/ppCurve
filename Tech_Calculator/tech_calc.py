@@ -561,12 +561,6 @@ def processSwing(mapSplitData: list):
         if mapSplitData[i]['pattern'] is False or mapSplitData[i]['head'] is True:
             swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
-            if abs(swingData[-1]['entryPos'][0] - swingData[-2]['entryPos'][0]) > 10 or \
-                abs(swingData[-1]['entryPos'][1] - swingData[-2]['entryPos'][1]) > 10 or \
-                abs(swingData[-1]['exitPos'][0] - swingData[-2]['exitPos'][0]) > 10 or \
-                abs(swingData[-1]['exitPos'][1] - swingData[-2]['exitPos'][1]) > 10:
-                swingData[-1]['entryPos'] = swingData[-2]['entryPos']
-                swingData[-1]['exitPos'] = swingData[-2]['exitPos']
         elif mapSplitData[i]['pattern']:  # Modify the angle and entry or exit position, doesn't create a new swing data
             # Find possible angle based on head placement
             for f in range(i, 0, -1):
@@ -759,6 +753,9 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
                 simHandPrePos = simHandCurPos
             positionComplexity = math.sqrt(
                 (simHandCurPos[1] - simHandPrePos[1]) ** 2 + (simHandCurPos[0] - simHandPrePos[0]) ** 2) ** 2
+            # Distance cap
+            if positionComplexity > 10:
+                positionComplexity = 10
         lengthOfList = len(angleChangeList) * 0.6
         if swingData[i]['reset']:  # If the pattern is a reset, look less far back
             pathLookback = 0.9
