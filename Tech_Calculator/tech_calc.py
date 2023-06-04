@@ -81,9 +81,9 @@ def handleBPM(mapData: list, bpm):
     if 'bpmEvents' not in mapData:
         newEvent = {'b': -1, 'm': BPM, 't': -1}
         bpmEvents.append(newEvent)
-        #  block = [block for block in mapData['colorNotes']]
-        #  for i in range(0, len(block)):
-        #      block[i]['t'] = TimeFromBeat(block[i]['b'])
+        # block = [block for block in mapData['colorNotes']]
+        # for i in range(0, len(block)):
+        #     block[i]['t'] = TimeFromBeat(block[i]['b'])
         return mapData
     bpmEvents = [bpm for bpm in mapData['bpmEvents']]
     newEvent = {'b': -1, 'm': BPM, 't': -1}
@@ -92,14 +92,14 @@ def handleBPM(mapData: list, bpm):
         bpmEvents.sort(key=lambda b: b['b'])
         # CM derp moment
         bpmEvents = [bpmEvent for bpmEvent in bpmEvents if bpmEvent['m'] != 100000]
-        #  currentTime = 0
-        #  for i in range(1, len(bpmEvents)):
-        #      currentTime += RawTimeFromBeat(bpmEvents[i]['b'] - bpmEvents[i - 1]['b'], bpmEvents[i - 1]['m'])
-        #      bpmEvents[i]['t'] = currentTime
+        # currentTime = 0
+        # for i in range(1, len(bpmEvents)):
+        #     currentTime += RawTimeFromBeat(bpmEvents[i]['b'] - bpmEvents[i - 1]['b'], bpmEvents[i - 1]['m'])
+        #     bpmEvents[i]['t'] = currentTime
 
-    block = [block for block in mapData['colorNotes']]
-    #  for i in range(0, len(block)):
-    #      block[i]['t'] = TimeFromBeat(block[i]['b'])
+    # block = [block for block in mapData['colorNotes']]
+    # for i in range(0, len(block)):
+    #     block[i]['t'] = TimeFromBeat(block[i]['b'])
 
     return mapData
 
@@ -207,26 +207,6 @@ def swapPositions(lis: list, pos1, pos2):
 
 def mod(x, m):
     return (x % m + m) % m
-
-
-def toString(direction):
-    if 67.5 < direction <= 112.5:
-        return "Up"
-    elif 247.5 < direction <= 292.5:
-        return "Down"
-    elif 157.5 < direction <= 202.5:
-        return "Left"
-    elif 0 <= direction <= 22.5 or 337.5 < direction < 360:
-        return "Right"
-    elif 112.5 < direction <= 157.5:
-        return "Up-Left"
-    elif 22.5 < direction <= 67.5:
-        return "Up-Right"
-    elif 202.5 < direction <= 247.5:
-        return "Down-Left"
-    elif 292.5 < direction <= 337.5:
-        return "Down-Right"
-    return False
 
 
 # Try to find if placement match for slider
