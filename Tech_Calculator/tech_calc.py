@@ -561,6 +561,12 @@ def processSwing(mapSplitData: list):
         if mapSplitData[i]['pattern'] is False or mapSplitData[i]['head'] is True:
             swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
+            if abs(swingData[-1]['entryPos'][0] - swingData[-2]['entryPos'][0]) > 10 or \
+                abs(swingData[-1]['entryPos'][1] - swingData[-2]['entryPos'][1]) > 10 or \
+                abs(swingData[-1]['exitPos'][0] - swingData[-2]['exitPos'][0]) > 10 or \
+                abs(swingData[-1]['exitPos'][1] - swingData[-2]['exitPos'][1]) > 10:
+                swingData[-1]['entryPos'] = swingData[-2]['entryPos']
+                swingData[-1]['exitPos'] = swingData[-2]['exitPos']
         elif mapSplitData[i]['pattern']:  # Modify the angle and entry or exit position, doesn't create a new swing data
             # Find possible angle based on head placement
             for f in range(i, 0, -1):
@@ -753,8 +759,6 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
                 simHandPrePos = simHandCurPos
             positionComplexity = math.sqrt(
                 (simHandCurPos[1] - simHandPrePos[1]) ** 2 + (simHandCurPos[0] - simHandPrePos[0]) ** 2) ** 2
-            if positionComplexity > 1:
-                positionComplexity = 1
         lengthOfList = len(angleChangeList) * 0.6
         if swingData[i]['reset']:  # If the pattern is a reset, look less far back
             pathLookback = 0.9
@@ -956,7 +960,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         returnDict = {'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass,
                       'low_note_nerf': low_note_nerf}
     if isuser:
-        print(f"Calculacted Tech = {round(tech, 2)}")  # Put Breakpoint here if you want to see
+        print(f"Calculated Tech = {round(tech, 2)}")  # Put Breakpoint here if you want to see
         # print(f"Calculated linear = {round(linear, 2)}")
         print(f"Calculated nerf = {round(low_note_nerf, 2)}")
         print(f"Calculated pass diff = {round(passNum, 2)}")
