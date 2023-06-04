@@ -753,6 +753,8 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
                 simHandPrePos = simHandCurPos
             positionComplexity = math.sqrt(
                 (simHandCurPos[1] - simHandPrePos[1]) ** 2 + (simHandCurPos[0] - simHandPrePos[0]) ** 2) ** 2
+            if positionComplexity > 1:
+                positionComplexity = 1
         lengthOfList = len(angleChangeList) * 0.6
         if swingData[i]['reset']:  # If the pattern is a reset, look less far back
             pathLookback = 0.9
