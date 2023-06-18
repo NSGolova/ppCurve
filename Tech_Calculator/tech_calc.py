@@ -323,7 +323,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         mapSplitData[i]['head'] = False
     # Find the first note
     if mapSplitData[0]['d'] == 8:
-        if mapSplitData[1]['d'] != 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+        if mapSplitData[1]['d'] != 8 and mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.1429:
             mapSplitData[0]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
         else:
             # Use the first arrow found to reverse search the direction
@@ -345,7 +345,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         # Pattern?
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
             and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], True)) \
-                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.1429:
             mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], True)
             if mapSplitData[0]['d'] == 8:
                 mapSplitData[0]['dir'] = mapSplitData[1]['dir']
@@ -372,7 +372,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
     else:
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
             and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], False)) \
-                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.125:
+                or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.1429:
             mapSplitData[0]['head'] = True
             mapSplitData[0]['pattern'] = True
             mapSplitData[1]['pattern'] = True
@@ -383,7 +383,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
             # If under 0.25 and placement matches, probably a pattern
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], True)) \
-                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
+                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.1429:
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'], True)
                 if mapSplitData[i - 1]['d'] == 8:
                     mapSplitData[i - 1]['dir'] = mapSplitData[i]['dir']
@@ -449,7 +449,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
             mapSplitData[i]['dir'] = mod(cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a'], 360)
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], False)) \
-                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.125:
+                    or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.1429:
                 mapSplitData[i]['pattern'] = True
                 mapSplitData[i]['bomb'] = mapSplitData[i - 1]['bomb']
                 if mapSplitData[i - 1]['pattern'] is False:
@@ -480,7 +480,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         # Pattern?
         if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
             and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], True)) \
-                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
+                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.1429:
             mapSplitData[-1]['dir'] = findAngleViaPosition(mapSplitData, len(mapSplitData) - 1,
                                                            len(mapSplitData) - 2, mapSplitData[0]['dir'], True)
             if mapSplitData[-2]['d'] == 8:
@@ -511,7 +511,7 @@ def flowDetector(mapSplitData: list, bombData: list, leftOrRight):
         mapSplitData[-1]['dir'] = mod(cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a'], 360)
         if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
             and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], False)) \
-                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.125:
+                or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.1429:
             mapSplitData[-1]['pattern'] = True
             mapSplitData[-1]['bomb'] = mapSplitData[-2]['bomb']
             if mapSplitData[-2]['pattern'] is False:
