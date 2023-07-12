@@ -3,7 +3,7 @@ import sys
 
 sys.path.insert(0, 'Tech_Calculator')
 sys.path.insert(0, '_BackendFiles')
-import _BackendFiles.setup as setup
+from ._BackendFiles.setup import loadInfoData, findStandardDiffs, loadMapData, findSongPath
 from packaging.version import parse
 import numpy as np
 from scipy.special import comb
@@ -934,16 +934,16 @@ if __name__ == "__main__":
     print("input map key")
     mapKey = input()
     mapKey = mapKey.replace("!bsr ", "")
-    infoData = setup.loadInfoData(mapKey)
+    infoData = loadInfoData(mapKey)
     bpm = infoData['_beatsPerMinute']
-    availableDiffs = setup.findStandardDiffs(setup.findSongPath(mapKey))
+    availableDiffs = findStandardDiffs(findSongPath(mapKey))
     if len(availableDiffs) > 1:
         print(f'Choose Diff num: {availableDiffs}')
         diffNum = int(input())
     else:
         diffNum = availableDiffs[0]
         print(f'autoloading {diffNum}')
-    mapData = setup.loadMapData(mapKey, diffNum)
+    mapData = loadMapData(mapKey, diffNum)
     mapCalculation(mapData, bpm, True, True)
     print("Done")
     input()

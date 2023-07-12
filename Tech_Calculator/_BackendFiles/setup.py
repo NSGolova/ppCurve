@@ -3,7 +3,7 @@ import os
 import csv
 import sys
 sys.path.insert(0, 'Tech_Calculator/_BackendFiles')
-import MapDownloader
+from .MapDownloader import downloadSong
 
 def load_BSPath():
     try:
@@ -86,7 +86,7 @@ def findSongPath(song_id: str, isuser=True): # Returns the song folder path by s
             print(song_id + " Not Downloaded or wrong song code!")
             print("Would you like to download this song? (Y/N)")
             if(response := input().capitalize() == "Y"):
-                if not (songFolder := MapDownloader.downloadSong(song_id, bsPath)):
+                if not (songFolder := downloadSong(song_id, bsPath)):
                     print(f"Download of {song_id} failed. Exiting...")
                     input()
                     exit()
@@ -94,7 +94,7 @@ def findSongPath(song_id: str, isuser=True): # Returns the song folder path by s
                 exit()
         else:
             print(f'Downloading Missing song {song_id}')
-            if not (songFolder := MapDownloader.downloadSong(song_id, bsPath)):
+            if not (songFolder := downloadSong(song_id, bsPath)):
                 print(f"Download of {song_id} failed. Exiting...")
                 input()
                 exit()
