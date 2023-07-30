@@ -676,7 +676,7 @@ def calcSwingDiff(swingData, bpm, hand, isuser=True):
         print(f"average {hand} hand stress {round(average([temp['stress'] for temp in data]), 2)}")
 
 
-def diffToPass(swingData, WINDOW):
+def diffToPass(swingData, swingData2, WINDOW):
     if len(swingData) == 0:
         return 0
     qDIFF = deque()
@@ -684,7 +684,12 @@ def diffToPass(swingData, WINDOW):
     for i in range(0, len(swingData)):
         if i > WINDOW:
             qDIFF.popleft()
-        qDIFF.append(swingData[i]['swingDiff'])
+        result = any(swingData[i]['time'] - 0.4 <= item['time'] <= swingData[i]['time'] + 0.4
+                     for item in swingData2)
+        if result:
+            qDIFF.append(swingData[i]['swingDiff'] * 1.05)
+        else:
+            qDIFF.append(swingData[i]['swingDiff'])
         tempList = sorted(qDIFF, reverse=True)
         if i >= WINDOW:
             windowDiff = average(tempList) * 0.8
@@ -729,17 +734,17 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
     calcSwingDiff(LeftSwingData, bpm, 'left', isuser)
-    passDiffLeftA = diffToPass(LeftSwingData, 8)
-    passDiffLeftB = diffToPass(LeftSwingData, 16)
-    passDiffLeftC = diffToPass(LeftSwingData, 32)
-    passDiffLeftD = diffToPass(LeftSwingData, 48)
-    passDiffLeftE = diffToPass(LeftSwingData, 96)
     calcSwingDiff(RightSwingData, bpm, 'right', isuser)
-    passDiffRightA = diffToPass(RightSwingData, 8)
-    passDiffRightB = diffToPass(RightSwingData, 16)
-    passDiffRightC = diffToPass(RightSwingData, 32)
-    passDiffRightD = diffToPass(RightSwingData, 48)
-    passDiffRightE = diffToPass(RightSwingData, 96)
+    passDiffLeftA = diffToPass(LeftSwingData, RightSwingData, 8)
+    passDiffLeftB = diffToPass(LeftSwingData, RightSwingData, 16)
+    passDiffLeftC = diffToPass(LeftSwingData, RightSwingData, 32)
+    passDiffLeftD = diffToPass(LeftSwingData, RightSwingData, 48)
+    passDiffLeftE = diffToPass(LeftSwingData, RightSwingData, 96)
+    passDiffRightA = diffToPass(RightSwingData, LeftSwingData, 8)
+    passDiffRightB = diffToPass(RightSwingData, LeftSwingData, 16)
+    passDiffRightC = diffToPass(RightSwingData, LeftSwingData, 32)
+    passDiffRightD = diffToPass(RightSwingData, LeftSwingData, 48)
+    passDiffRightE = diffToPass(RightSwingData, LeftSwingData, 96)
     passDiffLeft = (passDiffLeftA + passDiffLeftB + passDiffLeftC + passDiffLeftD + passDiffLeftE) / 5
     passDiffRight = (passDiffRightA + passDiffRightB + passDiffRightC + passDiffRightD + passDiffRightE) / 5
     balanced_pass = max(passDiffLeft, passDiffRight)
