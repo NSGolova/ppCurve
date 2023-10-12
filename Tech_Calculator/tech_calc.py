@@ -405,6 +405,7 @@ def processSwing(mapSplitData: list):
     swingData.append({'time': mapSplitData[0]['b'], 'angle': mapSplitData[0]['dir']})
     swingData[-1]['entryPos'], swingData[-1]['exitPos'] = \
         calculateBaseEntryExit((mapSplitData[0]['x'], mapSplitData[0]['y']), mapSplitData[0]['dir'])
+    swingData[-1]['patternRating'] = 0
     for i in range(1, len(mapSplitData)):
         # Previous note
         pBlockA = swingData[-1]['angle']
@@ -415,6 +416,7 @@ def processSwing(mapSplitData: list):
         if mapSplitData[i]['pattern'] is False or mapSplitData[i]['head'] is True:
             swingData.append({'time': cBlockB, 'angle': cBlockA})
             swingData[-1]['entryPos'], swingData[-1]['exitPos'] = calculateBaseEntryExit(cBlockP, cBlockA)
+            swingData[-1]['patternRating'] = 0
         elif mapSplitData[i]['pattern']:  # Modify the angle and entry or exit position, doesn't create a new swing data
             # Find possible angle based on head placement
             for f in range(i, 0, -1):
@@ -438,6 +440,12 @@ def processSwing(mapSplitData: list):
                 swingData[-1]['exitPos'] = [
                     cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667,
                     cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
+            direction_angle = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1],
+                                                            pBlockP[0] - cBlockP[0])), 360))
+            if not abs(direction_angle - cBlockA) <= 15:
+                swingData[-1]['patternRating'] = swingData[-1]['patternRating'] + 3
+            else:
+                swingData[-1]['patternRating'] = swingData[-1]['patternRating'] + 0.5
     return swingData
 
 
@@ -750,20 +758,22 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     balanced_tech = tech * (-1.4 ** (-balanced_pass) + 1)
     low_note_nerf = 1 / (
             1 + math.e ** (-0.6 * (len(SwingData) / 100 + 1.5)))  # https://www.desmos.com/calculator/povnzsoytj
+    avgPatternRating = average([swing['patternRating'] for swing in SwingData])
 
     if verbose:
         returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech,
                       'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass,
-                      'low_note_nerf': low_note_nerf}
+                      'low_note_nerf': low_note_nerf, 'avg_pattern_rating': avgPatternRating}
     else:
         returnDict = {'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass,
-                      'low_note_nerf': low_note_nerf}
+                      'low_note_nerf': low_note_nerf, 'avg_pattern_rating': avgPatternRating}
     if isuser:
         print(f"Calculated Tech = {round(tech, 2)}")  # Put Breakpoint here if you want to see
         print(f"Calculated nerf = {round(low_note_nerf, 2)}")
         print(f"Calculated balanced tech = {round(balanced_tech, 2)}")
         print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
-
+        print(f"Calculated average pattern rating = {round(avgPatternRating, 2)}")
+        
     return returnDict
 
 
