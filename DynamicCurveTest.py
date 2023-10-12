@@ -55,13 +55,8 @@ def newCurve(diff, tech, pattern):
         pointList[i][1] = pointList[i][1] * (1 + passbuff * diff)
 
     # Buff accvalue% and upper based on tech rating
-    # accvalue based on pass rating?
-    if diff >= 10:
-        accvalue = 0.94
-    elif diff >= 5:
-        accvalue = 0.95
-    else:
-        accvalue = 0.96
+    # Acc value is based on pass rating. Harder map = lower acc get buffed
+    accvalue = 0.97 - (0.0025 * diff)
     techbuff = 0.0025
     for i in range(0, len(pointList)):
         if pointList[i][0] >= accvalue:
@@ -80,6 +75,9 @@ def newCurve(diff, tech, pattern):
             pointList[i][1] = pointList[i][1] * (1 + patternbuff * pattern)
 
     # Curve dump here
+    print(f"Pass Rating: {diff}")
+    print(f"Tech Rating: {tech}")
+    print(f"Pattern Rating: {pattern}")
     print(F"{pointList}")
     # Plotting the Graph
     pointX = []
@@ -132,7 +130,7 @@ def requestCurveData(mapHash, diffNum, key):
         f"https://api.beatleader.xyz/map/hash/{mapHash}/")
     mapData = json.loads(result.text)
 
-    print(f"{mapData['name']}:")
+    print(f"Song Name: {mapData['name']}")
     diff = searchDiffIndex(diffNum, mapData['difficulties'])
     passRating = mapData['difficulties'][diff]['passRating']
     tech = mapData['difficulties'][diff]['techRating']
