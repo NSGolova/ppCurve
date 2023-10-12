@@ -409,6 +409,7 @@ def processSwing(mapSplitData: list):
     for i in range(1, len(mapSplitData)):
         # Previous note
         pBlockA = swingData[-1]['angle']
+        pBlockP = [mapSplitData[i - 1]['x'], mapSplitData[i - 1]['y']]
         # Current note
         cBlockB = mapSplitData[i]['b']
         cBlockA = mapSplitData[i]['dir']
