@@ -74,6 +74,13 @@ def newCurve(diff, tech, pattern):
         if pointList[i][0] >= accvalue:
             pointList[i][1] = pointList[i][1] * (1 + patternbuff * pattern)
 
+    # True acc map buff
+    if diff <= 1:
+        accbuff = 0.1
+        for i in range(0, len(pointList)):
+            if pointList[i][0] >= 0.98:
+                pointList[i][1] = pointList[i][1] * (1 + accbuff)
+
     # Curve dump here
     print(f"Pass Rating: {diff}")
     print(f"Tech Rating: {tech}")
@@ -112,28 +119,26 @@ def load_Song_Stats(speed, key, hash):
         # AiJSON['expected_acc'] = 1
     else:
         AiJSON['AIstats'] = json.loads(result.text)
-    try:
-        os.mkdir(f"_AIcache/{hash}")
-    except:
-        print("Existing Folder")
-    with open(f"_AIcache/{hash}/{diffNum} {speed}.json", 'w') as score_json:
-        json.dump(AiJSON, score_json, indent=4)
 
     return AiJSON
 
 
-def requestCurveData(mapHash, diffNum, key):
+def requestCurveData(diffNum, key):
     s = requests.Session()
+
+    result = s.get(
+        f"https://api.beatsaver.com/maps/id/{key}")
+    map = json.loads(result.text)
+    mapHash = map['versions'][-1]['hash']
     songStats = load_Song_Stats(1, key, mapHash)
 
     result = s.get(
-        f"https://api.beatleader.xyz/map/hash/{mapHash}/")
+        f"https://api.beatleader.xyz/leaderboards/hash/{mapHash}/")
     mapData = json.loads(result.text)
-
-    print(f"Song Name: {mapData['name']}")
-    diff = searchDiffIndex(diffNum, mapData['difficulties'])
-    passRating = mapData['difficulties'][diff]['passRating']
-    tech = mapData['difficulties'][diff]['techRating']
+    print(f"Song Name: {mapData['song']['name']}")
+    diff = searchDiffIndex(diffNum, mapData['song']['difficulties'])
+    passRating = mapData['song']['difficulties'][diff]['passRating']
+    tech = mapData['song']['difficulties'][diff]['techRating']
     pattern = songStats['lackStats']['avg_pattern_rating']
     newCurve(passRating, tech, pattern)
 
@@ -150,7 +155,4 @@ if __name__ == "__main__":
     else:
         diffNum = availableDiffs[0]
         print(f'autoloading {diffNum}')
-    # TODO: Automate hash fetching
-    print("input map hash")
-    mapHash = input()
-    requestCurveData(mapHash, diffNum, mapKey)
+    requestCurveData(diffNum, mapKey)
