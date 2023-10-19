@@ -444,9 +444,9 @@ def processSwing(mapSplitData: list):
             direction_angle = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1],
                                                             pBlockP[0] - cBlockP[0])), 360))
             if not abs(direction_angle - cBlockA) <= 15:
-                swingData[-1]['patternRating'] = swingData[-1]['patternRating'] + 3
+                swingData[-1]['patternRating'] += 3
             else:
-                swingData[-1]['patternRating'] = swingData[-1]['patternRating'] + 0.5
+                swingData[-1]['patternRating'] += 1
     return swingData
 
 
