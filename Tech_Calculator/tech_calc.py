@@ -708,6 +708,31 @@ def diffToPass(swingData, WINDOW):
         return 0
 
 
+def isInLinearPath(prev, curr, next):
+    dxc = next['entryPos'][0] - prev['entryPos'][0]
+    dyc = next['entryPos'][1] - prev['entryPos'][1]
+    dxl = curr['entryPos'][0] - prev['entryPos'][0]
+    dyl = curr['entryPos'][1] - prev['entryPos'][1]
+    cross = dxc * dyl - dyc * dxl
+    if cross == 0:
+        return True
+    else:
+        return False
+
+
+def detectLinear(data: list):
+    if len(data) < 2:
+        return data
+    data[0]['linear'] = True
+    data[1]['linear'] = True
+    for i in range(2, len(data)):
+        if isInLinearPath(data[i - 2], data[i - 1], data[i]) is True:
+            data[i]['linear'] = True
+        else:
+            data[i]['linear'] = False
+    return data
+
+
 def combineAndSortList(array1, array2, key):
     combinedArray = array1 + array2
     combinedArray = sorted(combinedArray, key=lambda x: x[f'{key}'])  # once combined, sort by time
@@ -730,17 +755,23 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         LeftPatternData = patternSplitter(LeftSwingData)
         LeftSwingData = parityPredictor(LeftPatternData, False)
         LeftSwingData, leftVerbose = swingCurveCalc(LeftSwingData, False, isuser)
+        LeftSwingData = detectLinear(LeftSwingData)
     if RightMapData is not None:
         RightMapData = flowDetector(RightMapData, True)
         RightSwingData = processSwing(RightMapData)
         RightPatternData = patternSplitter(RightSwingData)
         RightSwingData = parityPredictor(RightPatternData, True)
         RightSwingData, rightVerbose = swingCurveCalc(RightSwingData, True, isuser)
+        RightSwingData = detectLinear(RightSwingData)
 
     SwingData = combineAndSortList(LeftSwingData, RightSwingData, 'time')
     StrainList = [strain['angleStrain'] + strain['pathStrain'] for strain in SwingData]
     StrainList.sort()
     tech = average(StrainList[int(len(StrainList) * 0.25):])
+    LinearList = [linear['linear'] for linear in SwingData if linear['linear'] is True]
+    linear = 1
+    if len(SwingData) != 0:
+        linear = len(LinearList) / len(SwingData)
     calcSwingDiff(LeftSwingData, RightSwingData, bpm, 'left', isuser)
     calcSwingDiff(RightSwingData, LeftSwingData, bpm, 'right', isuser)
     passDiffLeftA = diffToPass(LeftSwingData, 8)
@@ -764,16 +795,19 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
     if verbose:
         returnDict = {'left': leftVerbose, 'right': rightVerbose, 'tech': tech,
                       'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass,
-                      'low_note_nerf': low_note_nerf, 'avg_pattern_rating': avgPatternRating}
+                      'low_note_nerf': low_note_nerf, 'avg_pattern_rating': avgPatternRating,
+                      'linear_rating': linear}
     else:
         returnDict = {'balanced_tech': balanced_tech, 'balanced_pass_diff': balanced_pass,
-                      'low_note_nerf': low_note_nerf, 'avg_pattern_rating': avgPatternRating}
+                      'low_note_nerf': low_note_nerf, 'avg_pattern_rating': avgPatternRating,
+                      'linear_rating': linear}
     if isuser:
         print(f"Calculated Tech = {round(tech, 2)}")  # Put Breakpoint here if you want to see
         print(f"Calculated nerf = {round(low_note_nerf, 2)}")
         print(f"Calculated balanced tech = {round(balanced_tech, 2)}")
         print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
         print(f"Calculated average pattern rating = {round(avgPatternRating, 2)}")
+        print(f"Calculated linear = {round(linear, 2)}")
         
     return returnDict
 
