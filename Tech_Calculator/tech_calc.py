@@ -660,6 +660,10 @@ def swingCurveCalc(swingData: list, leftOrRight, isuser=True):
     return swingData, returnDict
 
 
+def closest(lst, K):
+    return lst[min(range(len(lst)), key=lambda i: abs(lst[i]['time'] - K))]
+
+
 def calcSwingDiff(swingData, swingData2, bpm, hand, isuser=True):
     if len(swingData) == 0:
         return
@@ -678,10 +682,19 @@ def calcSwingDiff(swingData, swingData2, bpm, hand, isuser=True):
         data[-1]['stress'] = (swingData[i]['angleStrain'] + swingData[i]['pathStrain']) * data[-1]['hitDiff']
         swingData[i]['swingDiff'] = data[-1]['swingSpeed'] * (-1.4 ** (-data[-1]['swingSpeed']) + 1) * \
                                     (data[-1]['stress'] / (data[-1]['stress'] + 2) + 1)
-        result = any(swingData[i]['time'] - 0.4 <= item['time'] <= swingData[i]['time'] + 0.4
-                     for item in swingData2)
-        if result:
-            swingData[i]['swingDiff'] = swingData[i]['swingDiff'] * 1.05
+        close = [item for item in swingData2
+                 if swingData[i]['time'] - 0.6 <= item['time'] <= swingData[i]['time'] + 0.6]
+        if len(close) != 0:
+            if len(close) > 1:
+                result = closest(close, swingData[i]['time'])
+            elif len(close) == 1:
+                result = close[0]
+            if result['frequency'] >= 0.5:
+                if result['frequency'] >= 2:
+                    buff = 1.05
+                else:
+                    buff = 1 + ((0.25 * result['frequency']) ** 3) / 4
+                swingData[i]['swingDiff'] = swingData[i]['swingDiff'] * buff
     if isuser:
         peakSS = [temp['swingSpeed'] for temp in data]
         peakSS.sort(reverse=True)
