@@ -51,8 +51,11 @@ def V2_to_V3(V2mapData: dict):  # Convert V2 JSON to V3
             newMapData['colorNotes'][-1]['y'] = V2mapData['_notes'][i]['_lineLayer']
             newMapData['colorNotes'][-1]['a'] = 0
             newMapData['colorNotes'][-1]['c'] = V2mapData['_notes'][i]['_type']
-            newMapData['colorNotes'][-1]['d'] = V2mapData['_notes'][i]['_cutDirection']
-        elif V2mapData['_notes'][i]['_type'] == 3:  # Bombs
+            if V2mapData['_notes'][i]['_cutDirection'] >= 1000 or V2mapData['_notes'][i]['_cutDirection'] <= -1000:
+                newMapData['colorNotes'][-1]['d'] = 0
+            else:
+                newMapData['colorNotes'][-1]['d'] = V2mapData['_notes'][i]['_cutDirection']
+        elif V2mapData['_notes'][i]['_type'] == 3:      # Bombs
             newMapData['bombNotes'].append({'b': V2mapData['_notes'][i]['_time']})
             newMapData['bombNotes'][-1]['x'] = V2mapData['_notes'][i]['_lineIndex']
             newMapData['bombNotes'][-1]['y'] = V2mapData['_notes'][i]['_lineLayer']
