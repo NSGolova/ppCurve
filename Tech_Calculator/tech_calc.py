@@ -1,5 +1,6 @@
 import math
 import sys
+
 sys.path.insert(0, 'Tech_Calculator')
 sys.path.insert(0, '_BackendFiles')
 import _BackendFiles.setup as setup
@@ -9,7 +10,6 @@ from scipy.special import comb
 import time
 import copy
 from collections import deque
-
 
 # Works for both V2 and V3
 # Easy = 1, Normal = 3, Hard = 5, Expert = 7, Expert+ = 9
@@ -42,8 +42,8 @@ def bezier_curve(points, nTimes=1000):
     return list(np.dot(xPoints, polynomial_array)), list(np.dot(yPoints, polynomial_array))
 
 
-def V2_to_V3(V2mapData: dict):    # Convert V2 JSON to V3
-    newMapData = {'colorNotes':[], 'bombNotes':[], 'obstacles':[]}
+def V2_to_V3(V2mapData: dict):  # Convert V2 JSON to V3
+    newMapData = {'colorNotes': [], 'bombNotes': [], 'obstacles': []}
     for i in range(0, len(V2mapData['_notes'])):
         if V2mapData['_notes'][i]['_type'] in [0, 1]:
             newMapData['colorNotes'].append({'b': V2mapData['_notes'][i]['_time']})
@@ -52,11 +52,11 @@ def V2_to_V3(V2mapData: dict):    # Convert V2 JSON to V3
             newMapData['colorNotes'][-1]['a'] = 0
             newMapData['colorNotes'][-1]['c'] = V2mapData['_notes'][i]['_type']
             newMapData['colorNotes'][-1]['d'] = V2mapData['_notes'][i]['_cutDirection']
-        elif V2mapData['_notes'][i]['_type'] == 3:      # Bombs
+        elif V2mapData['_notes'][i]['_type'] == 3:  # Bombs
             newMapData['bombNotes'].append({'b': V2mapData['_notes'][i]['_time']})
             newMapData['bombNotes'][-1]['x'] = V2mapData['_notes'][i]['_lineIndex']
             newMapData['bombNotes'][-1]['y'] = V2mapData['_notes'][i]['_lineLayer']
-    for i in range (0, len(V2mapData['_obstacles'])):
+    for i in range(0, len(V2mapData['_obstacles'])):
         newMapData['obstacles'].append({'b': V2mapData['_obstacles'][i]['_time']})
         newMapData['obstacles'][-1]['x'] = V2mapData['_obstacles'][i]['_lineIndex']
         if V2mapData['_obstacles'][i]['_type']:  # V2 wall type defines crouch or full walls
@@ -129,7 +129,7 @@ def V3_3_0_to_V3(V3_0_0mapData: dict):
         newMapData['burstSliders'][i]['s'] = newMapData['burstSliders'][i].get('s', 1)
 
     return newMapData
-    
+
 
 def mapPrep(mapData):
     try:
@@ -204,42 +204,68 @@ def mod(x, m):
 
 
 # Try to find if placement match for slider
-def isSlider(prev, next, direction, dot):
+def isSlider(prev, next, direction, dot, pattern):
     if dot is True:
         if prev['x'] == next['x'] and prev['y'] == next['y']:
             return True
-    if 67.5 < direction <= 112.5:
-        if prev['y'] < next['y']:
-            return True
-    elif 247.5 < direction <= 292.5:
-        if prev['y'] > next['y']:
-            return True
-    elif 157.5 < direction <= 202.5:
-        if prev['x'] > next['x']:
-            return True
-    elif 0 <= direction <= 22.5 or 337.5 < direction < 360:
-        if prev['x'] < next['x']:
-            return True
-    elif 112.5 < direction <= 157.5:
-        if prev['y'] < next['y']:
-            return True
-        if prev['x'] > next['x']:
-            return True
-    elif 22.5 < direction <= 67.5:
-        if prev['y'] < next['y']:
-            return True
-        if prev['x'] < next['x']:
-            return True
-    elif 202.5 < direction <= 247.5:
-        if prev['y'] > next['y']:
-            return True
-        if prev['x'] > next['x']:
-            return True
-    elif 292.5 < direction <= 337.5:
-        if prev['y'] > next['y']:
-            return True
-        if prev['x'] < next['x']:
-            return True
+    if pattern is False:
+        if 67.5 < direction <= 112.5:
+            if prev['y'] < next['y'] and prev['x'] == next['x']:
+                return True
+        elif 247.5 < direction <= 292.5:
+            if prev['y'] > next['y'] and prev['x'] == next['x']:
+                return True
+        elif 157.5 < direction <= 202.5:
+            if prev['x'] > next['x'] and prev['y'] == next['y']:
+                return True
+        elif 0 <= direction <= 22.5 or 337.5 < direction < 360:
+            if prev['x'] < next['x'] and prev['y'] == next['y']:
+                return True
+        elif 112.5 < direction <= 157.5:
+            if prev['y'] < next['y'] and prev['x'] > next['x']:
+                return True
+        elif 22.5 < direction <= 67.5:
+            if prev['y'] < next['y'] and prev['x'] < next['x']:
+                return True
+        elif 202.5 < direction <= 247.5:
+            if prev['y'] > next['y'] and prev['x'] > next['x']:
+                return True
+        elif 292.5 < direction <= 337.5:
+            if prev['y'] > next['y'] and prev['x'] < next['x']:
+                return True
+    else:
+        if 67.5 < direction <= 112.5:
+            if prev['y'] < next['y']:
+                return True
+        elif 247.5 < direction <= 292.5:
+            if prev['y'] > next['y']:
+                return True
+        elif 157.5 < direction <= 202.5:
+            if prev['x'] > next['x']:
+                return True
+        elif 0 <= direction <= 22.5 or 337.5 < direction < 360:
+            if prev['x'] < next['x']:
+                return True
+        elif 112.5 < direction <= 157.5:
+            if prev['y'] < next['y']:
+                return True
+            if prev['x'] > next['x']:
+                return True
+        elif 22.5 < direction <= 67.5:
+            if prev['y'] < next['y']:
+                return True
+            if prev['x'] < next['x']:
+                return True
+        elif 202.5 < direction <= 247.5:
+            if prev['y'] > next['y']:
+                return True
+            if prev['x'] > next['x']:
+                return True
+        elif 292.5 < direction <= 337.5:
+            if prev['y'] > next['y']:
+                return True
+            if prev['x'] < next['x']:
+                return True
     return False
 
 
@@ -336,7 +362,7 @@ def flowDetector(mapSplitData: list, leftOrRight):
     if mapSplitData[1]['d'] == 8:
         # Pattern?
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
-            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], True)) \
+            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], True, False)) \
                 or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.1429:
             mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], True)
             if mapSplitData[0]['d'] == 8:
@@ -349,7 +375,7 @@ def flowDetector(mapSplitData: list, leftOrRight):
     else:
         mapSplitData[1]['dir'] = mod(cut_direction_index[mapSplitData[1]['d']] + mapSplitData[1]['a'], 360)
         if ((mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
-            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], False)) \
+             and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], False, False)) \
                 or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.1429):
             mapSplitData[0]['head'] = True
             mapSplitData[0]['pattern'] = True
@@ -359,7 +385,8 @@ def flowDetector(mapSplitData: list, leftOrRight):
         if mapSplitData[i]['d'] == 8:  # Dot note
             # If under 0.25 and placement matches, probably a pattern
             if (mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
-                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], True)) \
+                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], True,
+                             mapSplitData[i - 1]['pattern'])) \
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.1429:
                 mapSplitData[i]['dir'] = findAngleViaPosition(mapSplitData, i, i - 1, mapSplitData[i - 1]['dir'], True)
                 if mapSplitData[i - 1]['d'] == 8:
@@ -409,7 +436,7 @@ def flowDetector(mapSplitData: list, leftOrRight):
         else:  # Arrow note
             mapSplitData[i]['dir'] = mod(cut_direction_index[mapSplitData[i]['d']] + mapSplitData[i]['a'], 360)
             if ((mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.25
-                and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], False)) \
+                 and isSlider(mapSplitData[i - 1], mapSplitData[i], mapSplitData[i - 1]['dir'], False, mapSplitData[i - 1]['pattern']))
                     or mapSplitData[i]['b'] - mapSplitData[i - 1]['b'] <= 0.1429):
                 mapSplitData[i]['pattern'] = True
                 if mapSplitData[i - 1]['pattern'] is False:
@@ -433,7 +460,7 @@ def flowDetector(mapSplitData: list, leftOrRight):
     if mapSplitData[-1]['d'] == 8:
         # Pattern?
         if (mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
-            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], True)) \
+            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], True, mapSplitData[-2]['pattern'])) \
                 or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.1429:
             mapSplitData[-1]['dir'] = findAngleViaPosition(mapSplitData, len(mapSplitData) - 1,
                                                            len(mapSplitData) - 2, mapSplitData[-2]['dir'], True)
@@ -450,7 +477,7 @@ def flowDetector(mapSplitData: list, leftOrRight):
     else:
         mapSplitData[-1]['dir'] = mod(cut_direction_index[mapSplitData[-1]['d']] + mapSplitData[-1]['a'], 360)
         if ((mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.25
-            and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], False)) \
+             and isSlider(mapSplitData[-2], mapSplitData[-1], mapSplitData[-2]['dir'], False, mapSplitData[-2]['pattern'])) \
                 or mapSplitData[-1]['b'] - mapSplitData[-2]['b'] <= 0.1429):
             mapSplitData[-1]['pattern'] = True
             if mapSplitData[-2]['pattern'] is False:
@@ -469,6 +496,7 @@ def processSwing(mapSplitData: list):
     swingData[-1]['entryPos'], swingData[-1]['exitPos'] = \
         calculateBaseEntryExit((mapSplitData[0]['x'], mapSplitData[0]['y']), mapSplitData[0]['dir'])
     swingData[-1]['patternRating'] = 0
+
     for i in range(1, len(mapSplitData)):
         # Previous note
         pBlockA = swingData[-1]['angle']
@@ -505,7 +533,7 @@ def processSwing(mapSplitData: list):
                     cBlockP[0] * 0.333333 + math.cos(math.radians(cBlockA)) * 0.166667 + 0.166667,
                     cBlockP[1] * 0.333333 + math.sin(math.radians(cBlockA)) * 0.166667 + 0.16667]
             direction_angle = reverseCutDirection(mod(math.degrees(math.atan2(pBlockP[1] - cBlockP[1],
-                                                            pBlockP[0] - cBlockP[0])), 360))
+                                                                              pBlockP[0] - cBlockP[0])), 360))
             if not abs(direction_angle - cBlockA) <= 15:
                 swingData[-1]['patternRating'] += 3
             else:
@@ -884,7 +912,7 @@ def techOperations(mapData, bpm, isuser=True, verbose=True):
         print(f"Calculated balanced pass diff = {round(balanced_pass, 2)}")
         print(f"Calculated average pattern rating = {round(avgPatternRating, 2)}")
         print(f"Calculated linear = {round(linear, 2)}")
-        
+
     return returnDict
 
 
