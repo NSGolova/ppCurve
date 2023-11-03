@@ -362,9 +362,9 @@ def flowDetector(mapSplitData: list, leftOrRight):
     if mapSplitData[1]['d'] == 8:
         # Pattern?
         if (mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.25
-            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'], True, False)) \
+            and isSlider(mapSplitData[0], mapSplitData[1], mapSplitData[0]['dir'] if 'dir' in mapSplitData[0] else 0, True, False)) \
                 or mapSplitData[1]['b'] - mapSplitData[0]['b'] <= 0.1429:
-            mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'], True)
+            mapSplitData[1]['dir'] = findAngleViaPosition(mapSplitData, 1, 0, mapSplitData[0]['dir'] if 'dir' in mapSplitData[0] else 0, True)
             if mapSplitData[0]['d'] == 8:
                 mapSplitData[0]['dir'] = mapSplitData[1]['dir']
             mapSplitData[1]['pattern'] = True
@@ -586,7 +586,7 @@ def patternSplitter(swingData: list):
     if len(swingData) < 2:
         return []
     for i in range(0, len(swingData)):  # Swing Frequency Analyzer
-        if i > 0 and i + 1 < len(swingData):  # Checks done so we don't try to access data that doesn't exist
+        if i > 0 and i + 1 < len(swingData) and swingData[i + 1]['time'] - swingData[i - 1]['time'] != 0:  # Checks done so we don't try to access data that doesn't exist
             SF = 2 / (swingData[i + 1]['time'] - swingData[i - 1]['time'])  # Swing Frequency
         else:
             SF = 0
@@ -598,23 +598,24 @@ def patternSplitter(swingData: list):
     tempPlist = []  # Temp Pattern List
     for i in range(0, len(swingData)):
         if i > 0:
-            # Tries to find Patterns within margin
-            if (1 / (swingData[i]['time'] - swingData[i - 1]['time'])) - swingData[i]['frequency'] <= SFmargin:
-                if not patternFound:  # Found a pattern and it's the first one?
-                    patternFound = True
-                    del tempPlist[-1]
-                    if len(tempPlist) > 0:  # We only want to store lists with stuff
-                        patternList.append(tempPlist)
-                    tempPlist = [swingData[i - 1]]  # Store the 1st block of the pattern
-                tempPlist.append(swingData[i])  # Store the block we're working on
-            else:
-                if len(tempPlist) > 0 and patternFound:
-                    tempPlist.append(swingData[i])
-                    patternList.append(tempPlist)
-                    tempPlist = []
+            if swingData[i]['time'] - swingData[i-1]['time'] > 0:
+                # Tries to find Patterns within margin
+                if (1 / (swingData[i]['time'] - swingData[i - 1]['time'])) - swingData[i]['frequency'] <= SFmargin:
+                    if not patternFound:  # Found a pattern and it's the first one?
+                        patternFound = True
+                        del tempPlist[-1]
+                        if len(tempPlist) > 0:  # We only want to store lists with stuff
+                            patternList.append(tempPlist)
+                        tempPlist = [swingData[i - 1]]  # Store the 1st block of the pattern
+                    tempPlist.append(swingData[i])  # Store the block we're working on
                 else:
-                    patternFound = False
-                    tempPlist.append(swingData[i])
+                    if len(tempPlist) > 0 and patternFound:
+                        tempPlist.append(swingData[i])
+                        patternList.append(tempPlist)
+                        tempPlist = []
+                    else:
+                        patternFound = False
+                        tempPlist.append(swingData[i])
         else:
             tempPlist.append(swingData[0])
     return patternList
