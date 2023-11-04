@@ -305,11 +305,11 @@ def sliderCondition(prev, nxt, sim):
     if prev['d'] == 8:
         if prev['x'] == nxt['x'] and prev['y'] == nxt['y'] and nxt['d'] == 8:
             return True
-        if isSlider(sim[0], sim[1], nxt['x'], nxt['y'], prev['dir']):
+        if isSlider(sim[0], sim[1], nxt['x'], nxt['y'], prev['dir'] if 'dir' in prev else 0):
             return True
 
         return False
-    if isSlider(prev['x'], prev['y'], nxt['x'], nxt['y'], prev['dir']):
+    if isSlider(prev['x'], prev['y'], nxt['x'], nxt['y'], prev['dir'] if 'dir' in prev else 0):
         return True
     return False
 
